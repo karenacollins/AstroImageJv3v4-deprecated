@@ -44,7 +44,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 // ------ astroj
 
-
 /**
  * This plugin plots any number of columns from a Results or MeasurementTable.  This plugin
  * is based on the Plot_Columns plugin by F.V. Hessman.
