@@ -25,6 +25,7 @@ public class FitsHeaderEditor implements ListSelectionListener, ActionListener, 
     JPanel panel;
     JScrollPane scrollPane;
 	JCheckBox keywordLockCB;
+    JTextField searchTF;
 
 	public static String SAVE      = "SAVE";
     public static String SAVEFILE  = "SAVE FILE";
@@ -44,6 +45,8 @@ public class FitsHeaderEditor implements ListSelectionListener, ActionListener, 
     int frameY = -999999;
     int frameWidth = 600;
     int frameHeight = 600;
+    int lastGoodSearchCol = -1;
+    int lastGoodSearchRow = -1;
 
 	public FitsHeaderEditor(ImagePlus imagePlus)
 		{
@@ -143,7 +146,6 @@ public class FitsHeaderEditor implements ListSelectionListener, ActionListener, 
 
         table.setColumnSelectionAllowed(false);
 
-
 		ListSelectionModel model = table.getSelectionModel();
 		model.addListSelectionListener(this);
 		FontMetrics metrics = table.getFontMetrics(table.getFont());
@@ -182,10 +184,86 @@ public class FitsHeaderEditor implements ListSelectionListener, ActionListener, 
 		JPanel gui = new JPanel();
 
 
-		keywordLockCB = new JCheckBox("Lock keyword values", keywordLock);
+		keywordLockCB = new JCheckBox("Lock keywords", keywordLock);
         keywordLockCB.setToolTipText("Lock or unlock editing of the keyword field");
         keywordLockCB.addItemListener(this);
         gui.add (keywordLockCB);
+        
+        JLabel searchLabel = new JLabel("Search:");
+        gui.add (searchLabel);
+        
+        searchTF = new JTextField(10); 
+        searchTF.setToolTipText("Enter search text and press enter");
+        searchTF.addActionListener(new java.awt.event.ActionListener() {
+           public void actionPerformed(ActionEvent e) {
+           int rows = table.getRowCount();
+           int cols = table.getColumnCount();
+           if (rows < 1 || cols < 1) return;
+           int startRow = table.getSelectedRow();
+           if (startRow < 0) startRow = 0;
+           int startCol = table.getSelectedColumn();
+           if (startCol < 0) startCol = 0;
+           if (startRow == lastGoodSearchRow && startCol == lastGoodSearchCol) 
+               {
+               if (startCol == 4)
+                   {
+                   startCol = 0;
+                   if (startRow < rows - 1)
+                       {
+                       startRow++;
+                       }
+                   else
+                       {
+                       startRow = 0;
+                       startCol = 0;
+                       }
+                   }
+               else
+                   {
+                   startCol++;
+                   }
+               }
+           Object cellObject;
+           String cellText = "";
+           String searchText = searchTF.getText().trim().toLowerCase();
+           for (int j=startRow; j<rows; j++)
+               {
+               for (int i=0; i<cols; i++)
+                   {
+                   if (j == startRow && i == 0) i = startCol;
+                   cellObject = table.getValueAt(j, i);
+                   if (cellObject==null) 
+                       {
+                       cellText = " ";
+                       }
+                   else
+                       {
+                       cellText = cellObject.toString().toLowerCase();
+                       }
+                   if (cellText.contains(searchText))
+                       {
+                       //IJ.log("found "+searchText+" at ("+j+","+i+")");
+                       table.changeSelection(j, i, false, false);
+                       lastGoodSearchCol = i;
+                       lastGoodSearchRow = j;
+                       break;
+                       }
+                   }
+               if (cellText.contains(searchText))
+                   {
+                   break;
+                   }
+               if (j == rows - 1)
+                   {
+                   IJ.error("Search string not found");
+                   lastGoodSearchRow = 0;
+                   lastGoodSearchCol = 0;
+                   table.changeSelection(0, 0, false, false);
+                   }
+               }
+           }
+        });
+        gui.add (searchTF);
 
 		JButton deleterow = new JButton (DELETE);
         deleterow.setToolTipText("Delete selected row(s)");

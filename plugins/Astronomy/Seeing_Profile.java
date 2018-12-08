@@ -26,7 +26,10 @@ public class Seeing_Profile implements PlugInFilter
     double mR1 = 15;
     double mR2 = 30;
 	double peak = Double.MIN_VALUE;
+    double peak_raw = Double.MIN_VALUE;
+    double low_raw = 0.0;
     double meanPeak = Double.MIN_VALUE;
+    double meanPeakRaw = Double.MIN_VALUE;
 	double background;
 	double fwhm;
     double r1, r2, r3;
@@ -34,6 +37,7 @@ public class Seeing_Profile implements PlugInFilter
 	int nBins=100;
 	double[] radii = null;
 	double[] means = null;
+    double[] means_raw = null;
     int[] count =null;
 
     Calibration cal;
@@ -113,8 +117,8 @@ public class Seeing_Profile implements PlugInFilter
         Y0 = center.y();
         background = center.background();
         peak = center.peak();
-        
-        
+        peak_raw = peak;
+        low_raw = 0.0;
         if (fromClick)
             {
             ApertureRoi roi = new ApertureRoi (X0,Y0,mR,mR1,mR2,Double.NaN,recenter);
@@ -153,6 +157,7 @@ public class Seeing_Profile implements PlugInFilter
             nBins = (int)mR;
             radii = new double[nBins];
             means = new double[nBins];
+            means_raw = new double[nBins];
             count = new int[nBins];
 
             double R,z;
@@ -162,7 +167,7 @@ public class Seeing_Profile implements PlugInFilter
             int ymin = (int)(Y0-mR);
             int ymax = (int)(Y0+mR);
             peak = ip.getPixelValue((int)X0,(int)Y0);
-
+            
             // ACCUMULATE ABOUT CENTROID POSITION
 
             for (int j=ymin; j < ymax; j++)
@@ -179,6 +184,7 @@ public class Seeing_Profile implements PlugInFilter
                     means[bin] += z;
                     count[bin]++;
                     if (z > peak) peak=z;
+                    if (z < low_raw) low_raw=z;
                     }
                 }
 
@@ -186,23 +192,27 @@ public class Seeing_Profile implements PlugInFilter
                 {
                 if (count[bin]>0 && (means[bin]/count[bin]) > meanPeak) meanPeak = means[bin]/count[bin];
                 }
+            meanPeakRaw = meanPeak;
             meanPeak -= background;
 
             // NORMALIZE
 
     //		radii[0] = 0.0;
     //		means[0] = 0.0;
+            peak_raw = peak;
             peak -= background;
             for (int bin=0; bin < nBins; bin++)
                 {
                 if (count[bin] > 0)
                     {
+                    means_raw[bin] = means[bin] / count[bin];
                     means[bin]  =  ((means[bin] / count[bin]) - background)/meanPeak;
                     radii[bin] /= count[bin];
                     }
                 else
                     {
     //                IJ.log("No samples at radius "+bin);
+                    means_raw[bin] = Double.NaN;
                     means[bin] = Double.NaN;
                     radii[bin] = Double.NaN;
                     }
@@ -274,19 +284,19 @@ public class Seeing_Profile implements PlugInFilter
         double xMin = 0;
         double xMax = Math.max(mR,r3*1.1);
         double xRange = xMax - xMin;
-        double yMin = -0.3;
-        double yMax = 1.3;
+        double yMax = peak_raw*1.05; //1.3;
+        double yMin = -yMax*0.3;//-0.3;
         double yRange = yMax - yMin;
-        
+     
         plotOptions += ij.gui.Plot.X_TICKS;
         plotOptions += ij.gui.Plot.Y_TICKS;
         plotOptions += ij.gui.Plot.X_GRID;
         plotOptions += ij.gui.Plot.Y_GRID;
         plotOptions += ij.gui.Plot.X_NUMBERS;
         plotOptions += ij.gui.Plot.Y_NUMBERS;
-        plot = new Plot ("Seeing Profile","Radius ["+cal.getUnits()+"]","Normalized Profile",nullX,nullY,plotOptions);
+        plot = new Plot ("Seeing Profile","Radius ["+cal.getUnits()+"]","ADU",nullX,nullY,plotOptions);
         plot.setSize(plotWidth, plotHeight);
-        plot.setLimits (xMin,xMax,yMin, yMax);
+        plot.setLimits (xMin, xMax, yMin, yMax);
         double xPixels = plotWidth - (Plot.LEFT_MARGIN+Plot.RIGHT_MARGIN+1);
         double yPixels = plotHeight - (Plot.TOP_MARGIN+Plot.BOTTOM_MARGIN);
          
@@ -294,45 +304,46 @@ public class Seeing_Profile implements PlugInFilter
 
         plot.setColor(Color.MAGENTA);
         plot.setLineWidth(3);
-        plot.addPoints(radii, means, ij.gui.Plot.LINE);
+      
+        plot.addPoints(radii, means_raw, ij.gui.Plot.LINE);
         plot.setLineWidth(1);
 
 		plot.setColor (Color.RED);
 		double x1[] = new double[] {0.0, r1,   r1};
-		double y1[] = new double[] {1.0, 1.0, -0.2};
+		double y1[] = new double[] {meanPeakRaw, meanPeakRaw, yMin*0.725};
 		plot.addPoints (x1, y1, PlotWindow.LINE);
 		double x2[] = new double[] {r2,   r2,   r3,  r3};
-		double y2[] = new double[] {-0.2, 1.0, 1.0, -0.2};
+		double y2[] = new double[] {yMin*0.725, meanPeakRaw, meanPeakRaw, yMin*0.725};
 		plot.addPoints (x2, y2, PlotWindow.LINE);  
         
         plot.setJustification(ImageProcessor.RIGHT_JUSTIFY);
-		plot.addLabel ((r1-xMin)/xRange, 1-(1.0-yMin)/yRange,"SOURCE");
+		plot.addLabel ((r1-xMin)/xRange, 1.0-((meanPeakRaw-yMin)/yRange),"SOURCE");
         plot.setJustification(ImageProcessor.CENTER_JUSTIFY);
-		plot.addLabel ((r2+r3-2.0*xMin)/2.0/xRange,1.0-(1.0-yMin)/yRange,"BACKGROUND");   
+		plot.addLabel ((r2+r3-2.0*xMin)/2.0/xRange,1.0-((meanPeakRaw-yMin)/yRange),"BACKGROUND");   
         
         plot.setColor(new Color(50,205,50));  //dark green
         plot.setLineWidth(1);
         double dashLength = 5*(yRange)/yPixels;
-        double numDashes = (1.0-yMin-0.1)/dashLength;        //plot dMarker2
+        double numDashes = (meanPeakRaw-(yMin*0.725))/dashLength;        //plot dMarker2
         for (int dashCount = 0; dashCount < numDashes; dashCount +=2)    
             {
-            plot.drawLine((fwhm)/2.0, 1.0-dashLength*dashCount, (fwhm)/2.0, 1.0-dashLength*(dashCount+1));
+            plot.drawLine((fwhm)/2.0, meanPeakRaw-dashLength*dashCount, (fwhm)/2.0, meanPeakRaw-dashLength*(dashCount+1));
             }        
       
         plot.setJustification(ImageProcessor.CENTER_JUSTIFY);
 		plot.setLineWidth(1);
-        plot.addLabel(fwhm/2.0/xRange, 1.0 - (0.1/yRange - 17.0/yPixels), "HWHM");
-        plot.addLabel(fwhm/2.0/xRange, 1.0 - (0.1/yRange - 31.0/yPixels), df.format(fwhm/2.0));
+        plot.addLabel(fwhm/2.0/xRange, 1.0 - (-yMin*0.27/yRange - 17.0/yPixels), "HWHM");
+        plot.addLabel(fwhm/2.0/xRange, 1.0 - (-yMin*0.27/yRange - 31.0/yPixels), df.format(fwhm/2.0));
         
         plot.setColor(Color.RED);
-        plot.addLabel(r1/xRange, 1.0 - (0.1/yRange - 17.0/yPixels), "Radius");
-        plot.addLabel(r1/xRange, 1.0 - (0.1/yRange - 31.0/yPixels), df.format(r1));
+        plot.addLabel(r1/xRange, 1.0 - (-yMin*0.27/yRange - 17.0/yPixels), "Radius");
+        plot.addLabel(r1/xRange, 1.0 - (-yMin*0.27/yRange - 31.0/yPixels), df.format(r1));
         
-        plot.addLabel(r2/xRange, 1.0 - (0.1/yRange - 17.0/yPixels), "Back>");
-        plot.addLabel(r2/xRange, 1.0 - (0.1/yRange - 31.0/yPixels), df.format(r2));
+        plot.addLabel(r2/xRange, 1.0 - (-yMin*0.27/yRange - 17.0/yPixels), "Back>");
+        plot.addLabel(r2/xRange, 1.0 - (-yMin*0.27/yRange - 31.0/yPixels), df.format(r2));
         
-        plot.addLabel(r3/xRange, 1.0 - (0.1/yRange - 17.0/yPixels), "<Back");
-        plot.addLabel(r3/xRange, 1.0 - (0.1/yRange - 31.0/yPixels), df.format(r3));
+        plot.addLabel(r3/xRange, 1.0 - (-yMin*0.27/yRange - 17.0/yPixels), "<Back");
+        plot.addLabel(r3/xRange, 1.0 - (-yMin*0.27/yRange - 31.0/yPixels), df.format(r3));
 
         plot.setColor(Color.BLACK);
 		plot.addLabel(0.5, -32.0/yPixels, "Image: "+IJU.getSliceFilename(imp));
@@ -379,7 +390,7 @@ public class Seeing_Profile implements PlugInFilter
 				double dx = (double)i+Centroid.PIXELCENTER-X0;
 				double R = Math.sqrt(dx*dx+dy*dy);
 				radii[num] = R;
-				val = (ip.getPixelValue(i,j)-background)/meanPeak;
+				val = (ip.getPixelValue(i,j)); //-background)/meanPeak;
 				fluxes[num] = val;
 				num++;
 				}

@@ -487,7 +487,11 @@ public class MultiAperture_ extends Aperture_ implements MouseListener, MouseMot
                 }
 
 		if (starOverlay || skyOverlay || valueOverlay || nameOverlay)
-			ocanvas.clearRois();
+            {
+            //ocanvas.clearRois();
+            ocanvas.removeApertureRois();
+            ocanvas.removeAstrometryAnnotateRois();
+            }
         if (previous && (!useWCS || (useWCS && (raPosStored == null || decPosStored == null))))
             {
             infoMessage = "Please select first aperture (right click to finalize) ...";
@@ -1341,7 +1345,9 @@ public class MultiAperture_ extends Aperture_ implements MouseListener, MouseMot
         
         if (clearRois && (starOverlay || skyOverlay || valueOverlay || nameOverlay))
             {
-            ocanvas.clearRois();
+            //ocanvas.clearRois();
+            ocanvas.removeApertureRois();
+            ocanvas.removeAstrometryAnnotateRois();
             }        
         
         if (!autoMode && previous && firstClick && nAperturesStored > 0)
@@ -3043,7 +3049,8 @@ public class MultiAperture_ extends Aperture_ implements MouseListener, MouseMot
 			i=table.getFreeColumn (AP_MJD);
         if (showTimes && table.getColumnIndex(AP_JDUTC) == ResultsTable.COLUMN_NOT_FOUND)
 			i=table.getFreeColumn (AP_JDUTC);
-        
+        if (showTimes && FitsJ.isTESS(FitsJ.getHeader(imp)) && table.getColumnIndex(AP_BJDTDB) == ResultsTable.COLUMN_NOT_FOUND)
+            i=table.getFreeColumn (AP_BJDTDB);
 		if (showFits && fitsKeywords != null)
 			{
 			String[] sarr = fitsKeywords.split(",");

@@ -98,6 +98,7 @@ public class Aperture_ implements PlugInFilter
 	double xWidth, yWidth, width, fwhm, saturationWarningLevel=55000, linearityWarningLevel=30000, vradius, vrBack1, vrBack2, fradius=25, fwhmMult = 1.0, radialCutoff = 0.010;
 	double angle, round, variance;
 	double mjd = Double.NaN;
+    double bjd = Double.NaN;
     double apMag = 99.999;
 
 	double[] fitsVals = null;
@@ -205,6 +206,7 @@ public class Aperture_ implements PlugInFilter
 	public static String AP_RAWBACK = new String("RawSky/Pixel");
 	public static String AP_MJD = new String("J.D.-2400000");
     public static String AP_JDUTC = new String("JD_UTC");
+    public static String AP_BJDTDB = new String("BJD_TDB");
 	public static String AP_XWIDTH = new String("X-Width");
 	public static String AP_YWIDTH = new String("Y-Width");
 	public static String AP_MEANWIDTH = new String("Width");
@@ -487,6 +489,12 @@ public class Aperture_ implements PlugInFilter
 					catch (NumberFormatException e) {}
 					}
 				}
+			}
+        
+        bjd = 0.0;
+        if (hdr != null && isFITS && showTimes && FitsJ.isTESS(hdr))
+			{
+			bjd = FitsJ.getMeanTESSBJD(hdr);
 			}
 
 		// GET RA AND DEC (IN DEGREES) USING WCS
@@ -797,6 +805,18 @@ protected boolean adjustAperture(boolean updatePhotometry)
                     }
                 }
             }
+        if (showTimes && !Double.isNaN(bjd))
+            {
+            int col = table.getColumnIndex(AP_BJDTDB);
+            if (col >= 0)
+                {
+                double value = table.getValueAsDouble(col, table.getCounter()-1);
+                if (Double.isNaN(value) || value == 0.0)
+                    {
+                    table.addValue (AP_BJDTDB, bjd, 6);
+                    }
+                }
+            }
 		if (showWidths)
 			{
 			table.addValue (AP_XWIDTH+suffix, xWidth, 6);
@@ -865,7 +885,9 @@ protected boolean adjustAperture(boolean updatePhotometry)
 					i=table.getFreeColumn (sarr[l]);
 				}
 			}
-         
+        
+        if (showTimes && FitsJ.isTESS(FitsJ.getHeader(imp)) && table.getColumnIndex(AP_BJDTDB) == ResultsTable.COLUMN_NOT_FOUND)
+            i=table.getFreeColumn (AP_BJDTDB);
         if (showRadii)
             {
 			if (table.getColumnIndex(AP_RSOURCE) == ResultsTable.COLUMN_NOT_FOUND)

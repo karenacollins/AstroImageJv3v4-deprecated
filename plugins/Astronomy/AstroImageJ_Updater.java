@@ -5,12 +5,49 @@ import ij.plugin.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.security.cert.X509Certificate;
 
- 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.SecureRandom; 
+import java.security.GeneralSecurityException;
+
+
 /** This plugin implements the Help/Update AstroImageJ command. */
 public class AstroImageJ_Updater implements PlugIn {
 
     public static final String URL = "http://www.astro.louisville.edu/software/astroimagej/updates";
+    
+    static {
+        final TrustManager[] trustAllCertificates = new TrustManager[] {
+            new X509TrustManager() {
+                @Override
+                public X509Certificate[] getAcceptedIssuers() {
+                    return null; // Not relevant.
+                }
+                @Override
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    // Do nothing. Just allow them all.
+                }
+                @Override
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    // Do nothing. Just allow them all.
+                }
+            }
+        };
+
+        try {
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCertificates, new SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        } catch (GeneralSecurityException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
 	public void run(String arg) { 
 		
@@ -372,6 +409,9 @@ public class AstroImageJ_Updater implements PlugIn {
 		Vector v = new Vector();
 		try {
 			URL url = new URL(address);
+            //url.openConnection().setReadTimeout(10000);
+            //url.openConnection().setConnectTimeout(10000);
+           
 			InputStream in = url.openStream();
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			String line;

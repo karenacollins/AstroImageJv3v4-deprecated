@@ -4032,7 +4032,7 @@ static public void updateColumnLists()
                                         llab += " (transit fit)";
                                         }
                                     }
-                                if (!force[curve] && ((detrendFitIndex[curve] > 1 && showSigmaForDetrendedCurves) || showSigmaForAllCurves))
+                                if (((detrendFitIndex[curve] > 1 && showSigmaForDetrendedCurves) || showSigmaForAllCurves))  //!force[curve] && 
                                     {
                                     if (mmag[curve] && totalScaleFactor[curve] == 1000) sigma[curve] *= 1000;
                                     llab += " (RMS="+(sigma[curve]>=1.0?uptoThreePlaces.format(sigma[curve]):uptoFivePlaces.format(sigma[curve]))+")";
@@ -7965,14 +7965,7 @@ static void initializeVariables()
                             saveDataSubsetDialog(null); }});
                 filemenu.add(savedatasubsetmenuitem);
                 
-                JMenuItem createMpcFormatMenuItem = new JMenuItem("Create Minor Planet Center (MPC) format...");
-                createMpcFormatMenuItem.setToolTipText("<html>"+"Create MPC formatted data for submission to the Minor Planet Center.<br>"+
-                                                                "Open a table into Multi-plot before creating the MPC formatted data.</html>");
-                createMpcFormatMenuItem.addActionListener(new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                            createMpcFormatDialog(); }});
-                filemenu.add(createMpcFormatMenuItem);                
-                
+               
                 JMenuItem saveimagepngmenuitem = new JMenuItem("Save plot image as PNG...");
                 saveimagepngmenuitem.setToolTipText("<html>"+"saves plot image as a .png file"+"</html>");
                 saveimagepngmenuitem.addActionListener(new ActionListener() {
@@ -7994,6 +7987,37 @@ static void initializeVariables()
                             saveConfig(false); }});
                 filemenu.add(saveplotconfigmenuitem);
 
+                filemenu.addSeparator();
+                
+                JMenuItem createNEBReportMenuItem = new JMenuItem("Create NEB Report for TFOP SG1...");
+                createNEBReportMenuItem.setToolTipText("<html>"+"Create NEB report for submission to TFOP SG1.<br>");
+                createNEBReportMenuItem.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                            ij.plugin.Macro_Runner.runMacroFromJar("NEBSearchTableMacro.txt",""); }});
+                filemenu.add(createNEBReportMenuItem);   
+                
+                JMenuItem createDmagVsRMSPlotMenuItem = new JMenuItem("Create Delta-magnitude vs. RMS plot...");
+                createDmagVsRMSPlotMenuItem.setToolTipText("<html>"+"Create a Delta-magnitude vs. RMS plot for all apertures.<br>");
+                createDmagVsRMSPlotMenuItem.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                            ij.plugin.Macro_Runner.runMacroFromJar("DmagVsRMSplotMacro.txt",""); }}); 
+                filemenu.add(createDmagVsRMSPlotMenuItem); 
+                
+                JMenuItem createNEBLCPlotMenuItem = new JMenuItem("Create NEB light curve plots...");
+                createNEBLCPlotMenuItem.setToolTipText("<html>"+"Create NEB light curve plots with the predicted depth overplotted....<br>");
+                createNEBLCPlotMenuItem.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                            ij.plugin.Macro_Runner.runMacroFromJar("NEBLightCurvePlotWithPredDepth.txt",""); }}); 
+                filemenu.add(createNEBLCPlotMenuItem);
+                
+                JMenuItem createMpcFormatMenuItem = new JMenuItem("Create Minor Planet Center (MPC) format...");
+                createMpcFormatMenuItem.setToolTipText("<html>"+"Create MPC formatted data for submission to the Minor Planet Center.<br>"+
+                                                                "Open a table into Multi-plot before creating the MPC formatted data.</html>");
+                createMpcFormatMenuItem.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                            createMpcFormatDialog(); }});
+                filemenu.add(createMpcFormatMenuItem); 
+                
                 filemenu.addSeparator();
                 
                 openplottemplatemenuitem = new JMenuItem("Open plot configuration template...");

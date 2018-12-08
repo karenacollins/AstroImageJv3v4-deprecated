@@ -22,10 +22,10 @@ public class Copy_FITS_Header implements PlugIn
 	{
 	static String OPTIONAL_HISTORY_ENTRY = new String("Your text for an optional history entry here!");
 
-	public void run (String arg)
+	public void run (String copyTo_ImageName)
 		{
 		String[] header = null;
-
+        
 		// GET LIST OF CURRENT IMAGES
 
 		String[] images = IJU.listOfOpenImages(null);	// displayedImages();
@@ -36,16 +36,23 @@ public class Copy_FITS_Header implements PlugIn
 			}
 
 		// RUN DIALOG
+        String image1 = images[0];
+        String image2 = images[1];
+        if (copyTo_ImageName != null && !copyTo_ImageName.equals(""))
+            {
+            image2 = copyTo_ImageName;
+            if (image1.equals(image2)) image1 = images[1];
+            }
 
 		GenericDialog gd = new GenericDialog("Copy FITS Header");
-		gd.addChoice ("from",images,images[0]);
-		gd.addChoice ("to",images,images[1]);
-		gd.addMessage ("Optional entry:");
+		gd.addChoice ("from",images,image1);
+		gd.addChoice ("to",images,image2);
+        gd.addMessage ("Optional entry:");
 		gd.addStringField("HISTORY",OPTIONAL_HISTORY_ENTRY,40);
 		gd.showDialog();
 		if (gd.wasCanceled()) return;
-		String image1 = gd.getNextChoice();
-		String image2 = gd.getNextChoice();
+		image1 = gd.getNextChoice();
+		image2 = gd.getNextChoice();
 		String history = gd.getNextString();
 
 		// CONNECT TO IMAGES, GET FITS HEADER
