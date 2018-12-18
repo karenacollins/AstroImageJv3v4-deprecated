@@ -942,23 +942,23 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 
                 fileMenu.addSeparator();
                 
-                MenuItem createNEBReportMenuItem = new MenuItem("Create NEB Report for TFOP SG1...");
+                MenuItem createNEBReportMenuItem = new MenuItem("Create NEB search reports and plots...");
                 createNEBReportMenuItem.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
-                            Macro_Runner.runMacroFromJar("NEBSearchTableMacro.txt",""); }});
+                            Macro_Runner.runMacroFromJar("NEBSearchMacro.txt",""); }});
                 fileMenu.add(createNEBReportMenuItem); 
                 
-                MenuItem createDmagVsRMSPlotMenuItem = new MenuItem("Create Delta-magnitude vs. RMS plot...");
-                createDmagVsRMSPlotMenuItem.addActionListener(new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                            Macro_Runner.runMacroFromJar("DmagVsRMSplotMacro.txt",""); }});
-                fileMenu.add(createDmagVsRMSPlotMenuItem); 
-                
-                MenuItem createNEBLCPlotMenuItem = new MenuItem("Create NEB light curve plots...");
-                createNEBLCPlotMenuItem.addActionListener(new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                            Macro_Runner.runMacroFromJar("NEBLightCurvePlotWithPredDepth.txt",""); }});
-                fileMenu.add(createNEBLCPlotMenuItem); 
+//                MenuItem createDmagVsRMSPlotMenuItem = new MenuItem("Create Delta-magnitude vs. RMS plot...");
+//                createDmagVsRMSPlotMenuItem.addActionListener(new ActionListener() {
+//                    public void actionPerformed(ActionEvent e) {
+//                            Macro_Runner.runMacroFromJar("DmagVsRMSplotMacro.txt",""); }});
+//                fileMenu.add(createDmagVsRMSPlotMenuItem); 
+//                
+//                MenuItem createNEBLCPlotMenuItem = new MenuItem("Create NEB light curve plots...");
+//                createNEBLCPlotMenuItem.addActionListener(new ActionListener() {
+//                    public void actionPerformed(ActionEvent e) {
+//                            Macro_Runner.runMacroFromJar("NEBLightCurvePlotWithPredDepth.txt",""); }});
+//                fileMenu.add(createNEBLCPlotMenuItem); 
 
                 fileMenu.addSeparator();
                 

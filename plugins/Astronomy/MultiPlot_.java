@@ -437,6 +437,7 @@ public class MultiPlot_ implements PlugIn
         static double[] fitLeft;
         static double[] fitRight;
         static Minimization minimization;
+
         static JFrame[] fitFrame;
         static ImageIcon fitFrameIcon;
         static JPanel[] fitPanel;
@@ -594,6 +595,7 @@ public class MultiPlot_ implements PlugIn
 //        static boolean[] showOpErrors;
         static boolean[] hasOpErrors;  //indicates operator error is available for a curve
         static boolean[] lines;
+        static boolean[] smooth;
         static int[] marker, residualSymbol;
         static Color[] color, modelColor, residualModelColor, residualColor;
         static int[] markerIndex;
@@ -659,6 +661,7 @@ public class MultiPlot_ implements PlugIn
         static JComboBox[] detrendtypecombobox;
         static JComboBox   jdcolumnbox, racolumnbox, deccolumnbox;
         static JCheckBox[] uselinesbox;
+        static JCheckBox[] usesmoothbox;
         static JCheckBox[] autoscaleincludebox;
         static JCheckBox[] forcebox, shiftAboveBox, shiftBelowBox;
         
@@ -1707,6 +1710,7 @@ static public void updateColumnLists()
                                                                 operatorselection[curve].setSelectedIndex(operatorIndex[curve]);
                                                                 }
                                                         }
+                                                
                                                 }
 //                                        if (!operrlabel[curve].equals(""))
 //                                                {
@@ -1965,8 +1969,37 @@ static public void updateColumnLists()
                                             } 
                                         }
                                 }
-                        }
                 
+                        int csmwidth = 31;
+                        if (smooth[curve] && nn[curve]>csmwidth)
+                            {
+                            double[] xl = new double[nn[curve]];
+                            double[] yl = new double[nn[curve]];
+                            for (int xx=0; xx<nn[curve]; xx++)
+                                {
+                                yl[xx] = y[curve][xx];
+                                xl[xx] = x[curve][xx] - (int) x[curve][0];
+                                }
+                            Smooth csm = new Smooth(xl, yl);
+                            //csm.movingAverage(csmwidth);
+                            csm.savitzkyGolay(csmwidth);
+                            csm.setSGpolyDegree(2);
+                            double yave=0.0;
+                            for (int xx=0; xx<nn[curve]; xx++)
+                                {
+                                yave += yl[xx];
+                                }
+                            yave /= nn[curve];
+                            for (int xx=0; xx<nn[curve]; xx++)
+                                {
+                                //y[1][xx] = csm.interpolateMovingAverage(xl[xx]);
+                                y[curve][xx] = yl[xx] - csm.interpolateSavitzkyGolay(xl[xx]) +yave;
+                                }
+                            //y[curve]=smoothed.getMovingAverageValues();
+                            }
+                        //IJ.log(""+y[curve]);
+                        }
+
                 // PERFORM X-AUTOSCALING TO ONE OR MORE CURVES
                 dx = 0.0;
 
@@ -7047,6 +7080,7 @@ static void initializeVariables()
 //                showOpErrors = new boolean[maxCurves];
                 hasOpErrors = new boolean[maxCurves];
                 lines = new boolean[maxCurves];
+                smooth = new boolean[maxCurves];
                 marker = new int[maxCurves];
                 residualSymbol = new int[maxCurves];
                 color = new Color[maxCurves];
@@ -7114,6 +7148,7 @@ static void initializeVariables()
                 normtypecombobox = new JComboBox[maxCurves];
                 detrendtypecombobox = new JComboBox[maxCurves];
                 uselinesbox = new JCheckBox[maxCurves];
+                usesmoothbox = new JCheckBox[maxCurves];
                 forcebox = new JCheckBox[maxCurves];
                 shiftAboveBox = new JCheckBox[maxCurves];
                 shiftBelowBox = new JCheckBox[maxCurves];
@@ -7989,26 +8024,26 @@ static void initializeVariables()
 
                 filemenu.addSeparator();
                 
-                JMenuItem createNEBReportMenuItem = new JMenuItem("Create NEB Report for TFOP SG1...");
-                createNEBReportMenuItem.setToolTipText("<html>"+"Create NEB report for submission to TFOP SG1.<br>");
+                JMenuItem createNEBReportMenuItem = new JMenuItem("Create NEB search reports and plots...");
+                createNEBReportMenuItem.setToolTipText("<html>"+"Create NEB search reports and plots.<br>");
                 createNEBReportMenuItem.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
-                            ij.plugin.Macro_Runner.runMacroFromJar("NEBSearchTableMacro.txt",""); }});
+                            ij.plugin.Macro_Runner.runMacroFromJar("NEBSearchMacro.txt",""); }});
                 filemenu.add(createNEBReportMenuItem);   
                 
-                JMenuItem createDmagVsRMSPlotMenuItem = new JMenuItem("Create Delta-magnitude vs. RMS plot...");
-                createDmagVsRMSPlotMenuItem.setToolTipText("<html>"+"Create a Delta-magnitude vs. RMS plot for all apertures.<br>");
-                createDmagVsRMSPlotMenuItem.addActionListener(new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                            ij.plugin.Macro_Runner.runMacroFromJar("DmagVsRMSplotMacro.txt",""); }}); 
-                filemenu.add(createDmagVsRMSPlotMenuItem); 
-                
-                JMenuItem createNEBLCPlotMenuItem = new JMenuItem("Create NEB light curve plots...");
-                createNEBLCPlotMenuItem.setToolTipText("<html>"+"Create NEB light curve plots with the predicted depth overplotted....<br>");
-                createNEBLCPlotMenuItem.addActionListener(new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                            ij.plugin.Macro_Runner.runMacroFromJar("NEBLightCurvePlotWithPredDepth.txt",""); }}); 
-                filemenu.add(createNEBLCPlotMenuItem);
+//                JMenuItem createDmagVsRMSPlotMenuItem = new JMenuItem("Create Delta-magnitude vs. RMS plot...");
+//                createDmagVsRMSPlotMenuItem.setToolTipText("<html>"+"Create a Delta-magnitude vs. RMS plot for all apertures.<br>");
+//                createDmagVsRMSPlotMenuItem.addActionListener(new ActionListener() {
+//                    public void actionPerformed(ActionEvent e) {
+//                            ij.plugin.Macro_Runner.runMacroFromJar("DmagVsRMSplotMacro.txt",""); }}); 
+//                filemenu.add(createDmagVsRMSPlotMenuItem); 
+//                
+//                JMenuItem createNEBLCPlotMenuItem = new JMenuItem("Create NEB light curve plots...");
+//                createNEBLCPlotMenuItem.setToolTipText("<html>"+"Create NEB light curve plots with the predicted depth overplotted....<br>");
+//                createNEBLCPlotMenuItem.addActionListener(new ActionListener() {
+//                    public void actionPerformed(ActionEvent e) {
+//                            ij.plugin.Macro_Runner.runMacroFromJar("NEBLightCurvePlotWithPredDepth.txt",""); }}); 
+//                filemenu.add(createNEBLCPlotMenuItem);
                 
                 JMenuItem createMpcFormatMenuItem = new JMenuItem("Create Minor Planet Center (MPC) format...");
                 createMpcFormatMenuItem.setToolTipText("<html>"+"Create MPC formatted data for submission to the Minor Planet Center.<br>"+
@@ -11484,6 +11519,14 @@ static void initializeVariables()
                 if (!useWideDataPanel)
                         mainsubpanelgroup.add (seconddatasetlabel);
                 
+                JLabel smoothlabel = new JLabel ("Smooth");
+                smoothlabel.setFont(b11);
+                smoothlabel.setForeground(Color.DARK_GRAY);
+                smoothlabel.setToolTipText("Smooth long time-series by removing long-term variations");
+                smoothlabel.setHorizontalAlignment(JLabel.CENTER);
+                smoothlabel.setMaximumSize(new Dimension(45,25));
+                mainsubpanelgroup.add (smoothlabel);
+                
                 JPanel detrendlabelgroup = new JPanel (new SpringLayout());
                 detrendlabelgroup.setMaximumSize(new Dimension(195,20));
                 detrendlabelgroup.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));   
@@ -11956,6 +11999,17 @@ static void initializeVariables()
                         othercurvelabel[c].setHorizontalAlignment(JLabel.CENTER);
                         mainsubpanelgroup.add (othercurvelabel[c]);
                         }
+                
+                usesmoothbox[c] = new JCheckBox ("", smooth[c]);
+                usesmoothbox[c].addItemListener(new ItemListener(){
+                    public void itemStateChanged(ItemEvent e) {
+                        if (e.getStateChange() == ItemEvent.DESELECTED)
+                                smooth[c] = false;
+                        else if (e.getStateChange() == ItemEvent.SELECTED)
+                                smooth[c] = true;
+                        updatePlot(updateOneFit(c));}});
+                usesmoothbox[c].setHorizontalAlignment(JLabel.CENTER);
+                mainsubpanelgroup.add (usesmoothbox[c]);
         //DETREND PANEL GROUP
                 
                 detrendpanelgroup[c] = new JPanel (new SpringLayout());
@@ -19465,6 +19519,7 @@ static void saveLogToFile(String path)
                         xlabel[i]=Prefs.get("plot.xlabel"+i,xlabel[i]);
                         ylabel[i]=Prefs.get("plot.ylabel"+i,ylabel[i]);
                         lines[i]=Prefs.get("plot.lines"+i, lines[i]);
+                        smooth[i]=Prefs.get("plot.smooth"+i, smooth[i]);
                         markerIndex[i]=(int)Prefs.get("plot.markerIndex"+i,markerIndex[i]);
                         residualSymbolIndex[i]=(int)Prefs.get("plot.residualSymbolIndex"+i,residualSymbolIndex[i]);
                         colorIndex[i]=(int)Prefs.get("plot.colorIndex"+i, colorIndex[i]);
@@ -19752,6 +19807,7 @@ static void saveLogToFile(String path)
                         Prefs.set("plot.ylabel"+i,ylabel[i]);
                         Prefs.set("plot.oplabel"+i,oplabel[i]);
                         Prefs.set("plot.lines"+i, lines[i]);
+                        Prefs.set("plot.smooth"+i, smooth[i]);
                         Prefs.set("plot.markerIndex"+i,markerIndex[i]);
                         Prefs.set("plot.residualSymbolIndex"+i,residualSymbolIndex[i]);
                         Prefs.set("plot.colorIndex"+i,colorIndex[i]);
