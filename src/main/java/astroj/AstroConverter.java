@@ -49,7 +49,7 @@ import edu.stanford.ejalbert.BrowserLauncher;
  */
 public class AstroConverter implements ItemListener, ActionListener, ChangeListener, MouseListener   // PropertyChangeListener, MouseMotionListener, MouseWheelListener,
 	{
-    String      version = "3.30";
+    String      version = "3.4.0";
 	TimerTask	task = null;
 	Timer		timer = null;
 

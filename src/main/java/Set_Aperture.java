@@ -229,9 +229,9 @@ public class Set_Aperture implements PlugIn
         gd.addCheckbox ("Prompt to enter ref star absolute mag (required if target star absolute mag is desired)", getMags);
         gd.addCheckbox ("List the following FITS keyword decimal values in measurements table:", showFits);
 		gd.addStringField ("Keywords (comma separated):",fitsKeywords,80);
-		gd.addNumericField ("CCD gain [e-/count]", gain, 2);
-		gd.addNumericField ("CCD readout noise [e-]", noise, 2);
-		gd.addNumericField ("CCD dark current per sec [e-/pix/sec]", dark, 2);
+		gd.addNumericField ("CCD gain", gain, 6, 10, "[e-/count]");
+		gd.addNumericField ("CCD readout noise", noise, 6, 10, "[e-]");
+		gd.addNumericField ("CCD dark current per sec", dark, 6, 10, "[e-/pix/sec]");
 		gd.addStringField ("or - FITS keyword for dark current per exposure [e-/pix]", darkKeyword);    
 		gd.addCheckbox ("Saturation warning ('Saturated' in table) (red border in Ref Star Panel)...", showSaturationWarning);
 		gd.addNumericField ("    .... for levels higher than", saturationWarningLevel,0);

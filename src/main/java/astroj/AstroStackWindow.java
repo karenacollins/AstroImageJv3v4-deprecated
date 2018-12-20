@@ -11,6 +11,7 @@ import ij.macro.Interpreter;
 //import ij.measure.*;
 import ij.measure.Calibration;
 import ij.plugin.FolderOpener;
+import ij.plugin.Macro_Runner;
 //import ij.plugin.filter.*;
 //import ij.plugin.frame.*;
 //import ij.macro.Interpreter;
@@ -191,7 +192,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
 
             public boolean minMaxChanged = false;
             boolean newClick;
-            boolean button2Drag;
+            boolean button23Drag;
             boolean startButtonCentroid = true;
             boolean endButtonCentroid = true;
             boolean alreadyCustomStackWindow = false;
@@ -309,6 +310,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
             Boolean showErrors = true;
             Boolean showSNR = true;
             Boolean showRADEC = true;
+            Boolean autoGrabBandCFromHistogram = true;
             
             int rotation = AstroCanvas.ROT_0;
             boolean netFlipX, netFlipY, netRotate;
@@ -402,15 +404,16 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                      appendToAnnotationsInHeaderMenuItem, deleteAnnotationsFromHeaderMenuItem, clearAllAnnotateRoisMenuItem;
             
             MenuItem backupAllAIJPrefsMenuItem, restoreAllAIJPrefsMenuItem, restoreDefaultAIJPrefsMenuItem;
-            MenuItem combineStackImagesMenuItem;
+            MenuItem combineStackImagesMenuItem, copyFitsHeaderProcessMenuItem;
 
             MenuItem stackSorterMenuItem, alignStackMenuItem, imageStabilizerMenuItem, imageStabilizerApplyMenuItem;
             MenuItem debayerMenuItem, splitChannelsMenuItem, imagesToStackMenuItem, stackToImagesMenuItem, RGBComposerMenuItem;
-            MenuItem normalizeStackMenuItem, shiftImageMenuItem, editFitsHeaderMenuItem, staticProfilerMenuItem, stackToRGBMenuItem, makeCompositeMenuItem;
+            MenuItem normalizeStackMenuItem, shiftImageMenuItem, editFitsHeaderMenuItem, copyFitsHeaderMenuItem, staticProfilerMenuItem, stackToRGBMenuItem, makeCompositeMenuItem;
             MenuItem apertureSettingsMenuItem, multiApertureMenuItem, multiPlotMenuItem, openMeasurementsTableMenuItem, threeDSurfacePlotMenuItem;
             MenuItem bestEdgesMenuItem, imageCalcMenuItem, seeingProfileMenuItem, dynamicProfilerMenuItem, azimuthalAverageMenuItem;
             MenuItem measurementSettingsMenuItem, measurementMenuItem, smoothMenuItem, sharpenMenuItem, removeOutliersMenuItem;
-            MenuItem dataReducerMenuItem, selectBestFramesMenuItem, setPixelScaleMenuItem, setZoomIndicatorSizeMenuItem, setAutoScaleParametersMenuItem;
+            MenuItem dataReducerMenuItem, selectBestFramesMenuItem, setPixelScaleMenuItem, setZoomIndicatorSizeMenuItem, setAutoScaleParametersMenuItem,
+                     grabAutoScaleParametersMenuItem,resetAutoScaleParametersMenuItem;
             MenuItem defaultAnnotationColorMenuItem, defaultMeasurementColorMenuItem;
             CheckboxMenuItem showMeasureSexCB, showMeasureCircleCB, showMeasureCrosshairCB, showMeasureLengthCB, showMeasurePACB, showMeasureDelMagCB, showMeasureFluxRatioCB,
                              showMeasureMultiLinesCB, negateMeasureDelMagCB, writeMeasureLengthLogCB, writeMeasureLengthTableDegCB, writeMeasureLengthTableMinCB, writeMeasureLengthTableSecCB,
@@ -419,7 +422,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
             CheckboxMenuItem invertNoneRB, invertXRB, invertYRB, invertXYRB;
             CheckboxMenuItem rotate0RB, rotate90RB, rotate180RB, rotate270RB, useSIPAllProjectionsCB;
             CheckboxMenuItem showZoomCB, showDirCB, showXYCB, showScaleXCB, showScaleYCB, useFixedMinMaxValuesCB;
-            CheckboxMenuItem showAbsMagCB, showIntCntWithAbsMagCB, autoSaveWCStoPrefsCB;
+            CheckboxMenuItem showAbsMagCB, showIntCntWithAbsMagCB, autoSaveWCStoPrefsCB, autoGrabBandCFromHistogramCB;
             CheckboxMenuItem  rightClickAnnotateCB, useSimbadSearchCB, showInSimbadCB, autoUpdateAnnotationsInHeaderCB, autoDisplayAnnotationsFromHeaderCB;
             ButtonGroup contrastGroup, invertGroup, rotationGroup;
             CheckboxMenuItem autoConvertCB, usePreviousSizeCB, usePreviousPanCB, usePreviousZoomCB, showMeanNotPeakCB,
@@ -926,9 +929,9 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 openMeasurementsTableMenuItem = new MenuItem("Open data file...");
                 openMeasurementsTableMenuItem.addActionListener(this);
                 fileMenu.add(openMeasurementsTableMenuItem);
-
+                
                 fileMenu.addSeparator();
-
+                
                 saveDisplayAsPngMenuItem = new MenuItem("Save image display as PNG...");
                 saveDisplayAsPngMenuItem.addActionListener(this);
                 fileMenu.add(saveDisplayAsPngMenuItem);
@@ -937,6 +940,26 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 saveDisplayAsJpgMenuItem.addActionListener(this);
                 fileMenu.add(saveDisplayAsJpgMenuItem);
                 
+                fileMenu.addSeparator();
+                
+                MenuItem createNEBReportMenuItem = new MenuItem("Create NEB search reports and plots...");
+                createNEBReportMenuItem.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                            Macro_Runner.runMacroFromJar("NEBSearchMacro.txt",""); }});
+                fileMenu.add(createNEBReportMenuItem); 
+                
+//                MenuItem createDmagVsRMSPlotMenuItem = new MenuItem("Create Delta-magnitude vs. RMS plot...");
+//                createDmagVsRMSPlotMenuItem.addActionListener(new ActionListener() {
+//                    public void actionPerformed(ActionEvent e) {
+//                            Macro_Runner.runMacroFromJar("DmagVsRMSplotMacro.txt",""); }});
+//                fileMenu.add(createDmagVsRMSPlotMenuItem); 
+//                
+//                MenuItem createNEBLCPlotMenuItem = new MenuItem("Create NEB light curve plots...");
+//                createNEBLCPlotMenuItem.addActionListener(new ActionListener() {
+//                    public void actionPerformed(ActionEvent e) {
+//                            Macro_Runner.runMacroFromJar("NEBLightCurvePlotWithPredDepth.txt",""); }});
+//                fileMenu.add(createNEBLCPlotMenuItem); 
+
                 fileMenu.addSeparator();
                 
                 openAperturesMenuItem = new MenuItem("Open apertures...");
@@ -1113,12 +1136,24 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 useFixedMinMaxValuesCB.addItemListener(this);
                 scaleMenu.add(useFixedMinMaxValuesCB);
                 
+                autoGrabBandCFromHistogramCB = new CheckboxMenuItem("Auto-grab auto brightness and contrast from histogram", autoGrabBandCFromHistogram);
+                autoGrabBandCFromHistogramCB.addItemListener(this);
+                scaleMenu.add(autoGrabBandCFromHistogramCB);
+                
                 scaleMenu.addSeparator();
 
                 setAutoScaleParametersMenuItem = new MenuItem("Set auto brightness & contrast parameters...");
                 setAutoScaleParametersMenuItem.addActionListener(this);
-                scaleMenu.add(setAutoScaleParametersMenuItem);                
-
+                scaleMenu.add(setAutoScaleParametersMenuItem);         
+                
+                grabAutoScaleParametersMenuItem  = new MenuItem("Grab auto brightness & contrast from histogram");
+                grabAutoScaleParametersMenuItem.addActionListener(this);
+                scaleMenu.add(grabAutoScaleParametersMenuItem);   
+                
+                resetAutoScaleParametersMenuItem = new MenuItem("Reset auto brightness & contrast to defaults");
+                resetAutoScaleParametersMenuItem.addActionListener(this);
+                scaleMenu.add(resetAutoScaleParametersMenuItem); 
+                
                 mainMenuBar.add(scaleMenu);                
 
 //------VIEW menu---------------------------------------------------------------------
@@ -1304,11 +1339,13 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 
                 measureMenu = new Menu ("Measure");
                 
+                measureMenu.add("--Middle-drag, right-drag, or alt-left-drag to measure--");
+                
                 writeMiddleClickValuesTableCB = new CheckboxMenuItem("Middle click writes measurement data to table", writeMiddleClickValuesTable);
                 writeMiddleClickValuesTableCB.addItemListener(this);
                 measureMenu.add(writeMiddleClickValuesTableCB);
                 
-                writeMiddleDragValuesTableCB = new CheckboxMenuItem("Middle drag writes measurement data to table", writeMiddleDragValuesTable);
+                writeMiddleDragValuesTableCB = new CheckboxMenuItem("Middle or Right drag writes measurement data to table", writeMiddleDragValuesTable);
                 writeMiddleDragValuesTableCB.addItemListener(this);
                 measureMenu.add(writeMiddleDragValuesTableCB);
                 
@@ -1316,7 +1353,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 writeMiddleClickValuesLogCB.addItemListener(this);
                 measureMenu.add(writeMiddleClickValuesLogCB);
                 
-                writeMiddleDragValuesLogCB = new CheckboxMenuItem("Middle drag writes measurement data to log window", writeMiddleDragValuesLog);
+                writeMiddleDragValuesLogCB = new CheckboxMenuItem("Middle or Right drag writes measurement data to log window", writeMiddleDragValuesLog);
                 writeMiddleDragValuesLogCB.addItemListener(this);
                 measureMenu.add(writeMiddleDragValuesLogCB);
                 
@@ -1414,10 +1451,13 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 measurementSettingsMenuItem.addActionListener(this);
                 editMenu.add(measurementSettingsMenuItem);
 
-                editFitsHeaderMenuItem = new MenuItem("FITS header...");
+                editFitsHeaderMenuItem = new MenuItem("Edit FITS header...");
                 editFitsHeaderMenuItem.addActionListener(this);
-
                 editMenu.add(editFitsHeaderMenuItem);
+                
+                copyFitsHeaderMenuItem = new MenuItem("Copy FITS header to this image...");
+                copyFitsHeaderMenuItem.addActionListener(this);
+                editMenu.add(copyFitsHeaderMenuItem);
 
                 stackSorterMenuItem = new MenuItem("Stack...");
                 stackSorterMenuItem.addActionListener(this);
@@ -1441,11 +1481,15 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 
                 combineStackImagesMenuItem = new MenuItem("Combine stack slices into single image...");
                 combineStackImagesMenuItem.addActionListener(this);
-                processMenu.add(combineStackImagesMenuItem);                
-
+                processMenu.add(combineStackImagesMenuItem);   
+                
                 imageCalcMenuItem = new MenuItem("Image/stack calculator...");
                 imageCalcMenuItem.addActionListener(this);
                 processMenu.add(imageCalcMenuItem);
+                
+                copyFitsHeaderProcessMenuItem = new MenuItem("Copy FITS header to this image...");
+                copyFitsHeaderProcessMenuItem.addActionListener(this);
+                processMenu.add(copyFitsHeaderProcessMenuItem);
 
                 removeOutliersMenuItem = new MenuItem("Remove outliers from image/stack...");
                 removeOutliersMenuItem.addActionListener(this);
@@ -2379,6 +2423,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                                 writeNumericPanelField(max, maxTextField);
                                 savedMin = min;
                                 savedMax = max;
+                                if (startupAutoLevel && autoGrabBandCFromHistogram) grabAutoScaleParameters();
     //                            Prefs.set("Astronomy_Tool.savedMin", savedMin);
     //                            Prefs.set("Astronomy_Tool.savedMax", savedMax);
                                 imp.updateAndDraw();
@@ -2597,6 +2642,11 @@ protected ImageIcon createImageIcon(String path, String description) {
                     updateMinMaxValues(false);
                     updateMinMaxValueTextFields();
                     }
+                }
+            else if(source == autoGrabBandCFromHistogramCB)
+                {
+				autoGrabBandCFromHistogram = true;
+                Prefs.set("Astronomy_Tool.autoGrabBandCFromHistogram",autoGrabBandCFromHistogram);
                 }
             else if(source == usePreviousSizeCB)
                 {
@@ -2956,6 +3006,11 @@ protected ImageIcon createImageIcon(String path, String description) {
                     }
                 updateMinMaxValueTextFields();
                 updateMinMaxValues(false);
+                }
+            else if(source == autoGrabBandCFromHistogramCB)
+                {
+				autoGrabBandCFromHistogram = false;
+                Prefs.set("Astronomy_Tool.autoGrabBandCFromHistogram",autoGrabBandCFromHistogram);
                 }
             else if(source == usePreviousSizeCB)
                 {
@@ -3476,6 +3531,15 @@ protected ImageIcon createImageIcon(String path, String description) {
                     {
                     setAutoScaleParametersDialog();
                     }
+                else if(b == grabAutoScaleParametersMenuItem)
+                    {
+                    grabAutoScaleParameters();
+                    }  
+                else if(b == resetAutoScaleParametersMenuItem)
+                    {
+                    resetAutoScaleParameters();
+                    } 
+                    
               // Other are checkboxMenuItems
 
 
@@ -3581,7 +3645,10 @@ protected ImageIcon createImageIcon(String path, String description) {
                 else if(b == editFitsHeaderMenuItem)
                     {
                     FitsHeaderEditor fhe = new FitsHeaderEditor(imp);
-//                    IJ.runPlugIn("FITS_Header_Editor", "");
+                    }
+                else if(b == copyFitsHeaderMenuItem)
+                    {
+                    IJ.runPlugIn("Copy_FITS_Header", imp.getTitle());
                     }
                 else if(b == stackSorterMenuItem)
                     {
@@ -3599,11 +3666,15 @@ protected ImageIcon createImageIcon(String path, String description) {
                     {
                     if (imp.getType()==ImagePlus.COLOR_RGB) imp.getProcessor().reset();
                     IJ.run("Z Project...", "");
-                    }                            
+                    }          
                 else if(b == imageCalcMenuItem)
                     {
                     if (imp.getType()==ImagePlus.COLOR_RGB) imp.getProcessor().reset();
                     IJ.run("Image Calculator...", "");
+                    }
+                else if(b == copyFitsHeaderProcessMenuItem)
+                    {
+                    IJ.runPlugIn("Copy_FITS_Header", imp.getTitle());
                     }
                 else if(b == removeOutliersMenuItem)
                     {
@@ -3831,6 +3902,7 @@ protected ImageIcon createImageIcon(String path, String description) {
                         Prefs.set("Astronomy_Tool.fixedMaxValue", fixedMaxValue);
                         }
                     updateMinMaxValues(b == minTextField || b == maxTextField);
+                    if (startupAutoLevel && autoGrabBandCFromHistogram) grabAutoScaleParameters();
                     }
                 else if(b == RATextField || b == DecTextField)
                     {
@@ -4479,11 +4551,11 @@ protected ImageIcon createImageIcon(String path, String description) {
         gd.addMessage ("");
         gd.addMessage ("Monochrome Images:");
 		gd.addNumericField ("Low pixel value: mean image value less ",autoScaleFactorLow,4,8,"times standard deviation (default = 0.5)");
-        gd.addNumericField ("How pixel value: mean image value plus ",autoScaleFactorHigh,4,8,"times standard deviation (default = 2.0)");
+        gd.addNumericField ("High pixel value: mean image value plus ",autoScaleFactorHigh,4,8,"times standard deviation (default = 2.0)");
         gd.addMessage ("");
         gd.addMessage ("RGB Images:");
 		gd.addNumericField ("Low pixel value: mean image value less ",autoScaleFactorLowRGB,4,8,"times standard deviation (default = 2.0)");
-        gd.addNumericField ("How pixel value: mean image value plus ",autoScaleFactorHighRGB,4,8,"times standard deviation (default = 6.0)");
+        gd.addNumericField ("High pixel value: mean image value plus ",autoScaleFactorHighRGB,4,8,"times standard deviation (default = 6.0)");
 
 		gd.showDialog();
         
@@ -4501,6 +4573,43 @@ protected ImageIcon createImageIcon(String path, String description) {
         Prefs.set("Astronomy_Tool.autoScaleFactorHighRGB", autoScaleFactorHighRGB);
         }
 
+    void grabAutoScaleParameters()
+        {
+        getStatistics();
+        if (imp.getType()!=ImagePlus.COLOR_RGB)
+            {
+            autoScaleFactorLow=(stats.mean - min)/stats.stdDev;
+            autoScaleFactorHigh=(max - stats.mean)/stats.stdDev;
+            Prefs.set("Astronomy_Tool.autoScaleFactorLow", autoScaleFactorLow);
+            Prefs.set("Astronomy_Tool.autoScaleFactorHigh", autoScaleFactorHigh);
+            }
+        else
+            {
+            autoScaleFactorLowRGB=(stats.mean - min)/stats.stdDev;
+            autoScaleFactorHighRGB=(max - stats.mean)/stats.stdDev;
+            Prefs.set("Astronomy_Tool.autoScaleFactorLowRGB", autoScaleFactorLowRGB);
+            Prefs.set("Astronomy_Tool.autoScaleFactorHighRGB", autoScaleFactorHighRGB);
+            }
+        //setAstroProcessor(false);
+        }
+    void resetAutoScaleParameters()
+        {
+        if (imp.getType()!=ImagePlus.COLOR_RGB)
+            {
+            autoScaleFactorLow=0.5;
+            autoScaleFactorHigh=2.0;
+            Prefs.set("Astronomy_Tool.autoScaleFactorLow", autoScaleFactorLow);
+            Prefs.set("Astronomy_Tool.autoScaleFactorHigh", autoScaleFactorHigh);
+            }
+        else
+            {
+            autoScaleFactorLowRGB=2.0;
+            autoScaleFactorHighRGB=6.0;
+            Prefs.set("Astronomy_Tool.autoScaleFactorLowRGB", autoScaleFactorLowRGB);
+            Prefs.set("Astronomy_Tool.autoScaleFactorHighRGB", autoScaleFactorHighRGB);
+            }
+        setAstroProcessor(false);
+        }
 
     void updateMinMaxValues(boolean minOrMaxChanged)
         {
@@ -6280,7 +6389,7 @@ void setupListeners() {
                 lastScreenY = startDragScreenY;  //update in mouseDragged during drag
                 startDragSubImageX =ac.getSrcRect().x;
                 startDragSubImageY =ac.getSrcRect().y;
-                button2Drag = false;
+                button23Drag = false;
                 IJ.setInputEvent(e);
                 newClick = true;
                 
@@ -6318,10 +6427,9 @@ void setupListeners() {
                 double imageY = ac.offScreenYD(screenY);
                 ImageProcessor ip = imp.getProcessor();
                 IJ.setInputEvent(e);
-                if (((e.getModifiers() & MouseEvent.BUTTON2_MASK) != 0) && button2Drag)// ||
-                  //  (((e.getModifiers() & MouseEvent.BUTTON3_MASK) != 0) && button2Drag && e.isControlDown()))
-                        {                                // measure distance and report in Results Table
-                        button2Drag = false;
+                if (((e.getModifiers() & MouseEvent.BUTTON2_MASK) != 0  || (e.getModifiers() & MouseEvent.BUTTON3_MASK) != 0) && button23Drag) //  right-drag or middle drag measures distance and delta mag and reports in Tables
+                        {    
+                        button23Drag = false;
                         endButtonCentroid = (buttonCentroid.isSelected() && !e.isShiftDown()) || (!buttonCentroid.isSelected() && e.isShiftDown());
                         if (endCen.measure(imp, imageX, imageY, radius, rBack1, rBack2, endButtonCentroid, backPlane, removeBackStars) && endButtonCentroid)
                             {
@@ -6566,9 +6674,9 @@ void setupListeners() {
                         {
 //                        apertureOverlay.clear();
                         ac.repaint();
-                        if ((e.getModifiers() & MouseEvent.BUTTON3_MASK) != 0)    // control-dragging with right mouse button
-                                {                                                 // measure distance, update data display
-                                if (e.isControlDown())
+                        if (false) //((e.getModifiers() & MouseEvent.BUTTON3_MASK) != 0)    // change screen min and max display values
+                                {                                                 // 
+                                if (e.isControlDown())                            // if control press do nothing
                                         {
                                         }
                                 else                                                //no modifier - change screen min and max display values
@@ -6586,7 +6694,7 @@ void setupListeners() {
                                         updateXYValue(imageX, imageY, value, NOT_DRAGGING);
                                         }
                                 }
-                        else if ((e.getModifiers() & MouseEvent.BUTTON2_MASK) != 0)        // dragging with middle mouse button
+                        else if ((e.getModifiers() & MouseEvent.BUTTON2_MASK) != 0 || (e.getModifiers() & MouseEvent.BUTTON3_MASK) != 0)        // dragging with middle mouse button
                                 {                                                          // measure distance
                                 if (goodWCS)
                                         {
@@ -6596,7 +6704,7 @@ void setupListeners() {
                                         }
                                 if (!movingAperture)
                                     {
-                                    if (!button2Drag) 
+                                    if (!button23Drag) 
                                         {
                                         measRoi.setAppearance(true, true, showMeasureCircle, showMeasureCrosshair&&startButtonCentroid, false, showMeasureLength, showMeasurePA, false, false,
                                                                     startDragCenX, startDragCenY, imageX, imageY, radius,  
@@ -6611,12 +6719,13 @@ void setupListeners() {
                                                               getLengthLabel(imageX, imageY), getPALabel(imageX, imageY), "", "", IJU.colorOf(defaultMeasurementColor), showMeasureMultiLines);
                                         }
                                     }
-                                button2Drag = true;                                        // and save to results window when mouse released
+                                button23Drag = true;                                        // and save to results window when mouse released
                                 
                                 //if (!movingAperture) imp.setRoi(new Line(startDragCenX, startDragCenY, imageX, imageY));
 
                                 updateXYValue(imageX, imageY, value, DRAGGING);
                                 }
+                       
 //                        else if ((e.getModifiers() & MouseEvent.BUTTON1_MASK) != 0 && e.isShiftDown() && !e.isControlDown())
 //                            {
 //                            imp.setRoi(new OvalRoi(imageX>startDragX?startDragX:imageX, imageY>startDragY?startDragY:imageY,
@@ -8491,6 +8600,7 @@ double[] processCoordinatePair(JTextField textFieldA, int decimalPlacesA, int ba
         showIntCntWithAbsMag = Prefs.get("Astronomy_Tool.showIntCntWithAbsMag", showIntCntWithAbsMag);
         showSkyOverlay = Prefs.get ("aperture.skyoverlay", showSkyOverlay);
         useFixedMinMaxValues = Prefs.get("Astronomy_Tool.useFixedMinMaxValues", useFixedMinMaxValues);
+        autoGrabBandCFromHistogram = Prefs.get("Astronomy_Tool.autoGrabBandCFromHistogram",autoGrabBandCFromHistogram);
         fixedMinValue = Prefs.get("Astronomy_Tool.fixedMinValue", minValue);
         fixedMaxValue = Prefs.get("Astronomy_Tool.fixedMaxValue", maxValue);
         negateMeasureDelMag = Prefs.get("Astronomy_Tool.negateMeasureDelMag", negateMeasureDelMag);
@@ -8602,6 +8712,7 @@ double[] processCoordinatePair(JTextField textFieldA, int decimalPlacesA, int ba
         Prefs.set("aperture.skyoverlay", showSkyOverlay);
         if (imp != null && imp.getType() != ImagePlus.COLOR_RGB)
             Prefs.set("Astronomy_Tool.useFixedMinMaxValues", useFixedMinMaxValues);
+        Prefs.set("Astronomy_Tool.autoGrabBandCFromHistogram",autoGrabBandCFromHistogram);
         Prefs.set("Astronomy_Tool.fixedMinValue", fixedMinValue);
         Prefs.set("Astronomy_Tool.fixedMaxValue", fixedMaxValue);
         Prefs.set("Astronomy_Tool.negateMeasureDelMag", negateMeasureDelMag);

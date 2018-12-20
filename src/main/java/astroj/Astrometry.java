@@ -228,8 +228,8 @@ public class Astrometry //implements KeyListener
             String login = "request-json=" + URLEncoder.encode(toJSONString(loginData),"UTF-8");
 
             URLConnection astrometryCon = loginURL.openConnection();
-            astrometryCon.setConnectTimeout(10000);
-            astrometryCon.setReadTimeout(10000);
+            astrometryCon.setConnectTimeout(60000);
+            astrometryCon.setReadTimeout(60000);
             astrometryCon.setDoOutput(true);
             astrometryCon.setDoInput(true);
 
@@ -401,8 +401,8 @@ public class Astrometry //implements KeyListener
             try {
                 uploadURL = new URL((useAlternateAstrometryServer?alternateAstrometryUrlBase:defaultAstrometryUrlBase)+"/api/upload");
                 HttpURLConnection uploadCon = (HttpURLConnection)uploadURL.openConnection();
-                uploadCon.setConnectTimeout(20000);
-                uploadCon.setReadTimeout(20000);
+                uploadCon.setConnectTimeout(60000);
+                uploadCon.setReadTimeout(60000);
                 uploadCon.setUseCaches(false);
 
                 uploadCon.setDoOutput(true);
@@ -464,15 +464,15 @@ public class Astrometry //implements KeyListener
                 BufferedReader in = null;
                 Boolean still_processing = true;
                 int n_failed_attempts = 0; 
-                int maxWaitTime = useAlternateAstrometryServer?600:30;
+                int maxWaitTime = useAlternateAstrometryServer?600:120;
 
                 String inputLine = null;
                 while (still_processing && n_failed_attempts < maxWaitTime)
                     {
                     if (canceled) return CANCELED;
                     URLConnection subCheckCon = subCheckURL.openConnection();
-                    subCheckCon.setConnectTimeout(10000);
-                    subCheckCon.setReadTimeout(10000);                
+                    subCheckCon.setConnectTimeout(60000);
+                    subCheckCon.setReadTimeout(60000);                
                     try {
                         in = new BufferedReader(new InputStreamReader(subCheckCon.getInputStream()));
                         inputLine = null;
@@ -481,7 +481,7 @@ public class Astrometry //implements KeyListener
                             {
                             resultText += inputLine;
                             }            
-    //                    log(resultText);
+//                        log(resultText);
                         result2 = (JSONObject)parser.parse(resultText); 
                         job_id_list = result2.get("jobs");
     //                    processing_finished = result2.get("processing_finished");
@@ -555,7 +555,7 @@ public class Astrometry //implements KeyListener
                 BufferedReader in = null;
                 Boolean still_processing = true;
                 int n_failed_attempts = 0; 
-                int maxWaitTime = notDP ? 600 : 60;
+                int maxWaitTime = notDP ? 600 : 120;
                 gotProcessingResponse = false;
                 gotFailedResponse = false;                
 
@@ -564,8 +564,8 @@ public class Astrometry //implements KeyListener
                     {
                     if (canceled) return CANCELED;
                     URLConnection jobCheckCon = jobCheckURL.openConnection();
-                    jobCheckCon.setConnectTimeout(10000);
-                    jobCheckCon.setReadTimeout(10000);                
+                    jobCheckCon.setConnectTimeout(60000);
+                    jobCheckCon.setReadTimeout(60000);                
                     try {
 
                         in = new BufferedReader(new InputStreamReader(jobCheckCon.getInputStream()));
@@ -655,8 +655,8 @@ public class Astrometry //implements KeyListener
     //            getFileURL = new URL("http://nova.astrometry.net/api/jobs/"+jobID+"/annotations");
                 getFileURL = new URL((useAlternateAstrometryServer?alternateAstrometryUrlBase:defaultAstrometryUrlBase)+"/wcs_file/"+jobID);
                 URLConnection fileDownloadCon = getFileURL.openConnection();
-                fileDownloadCon.setConnectTimeout(10000);
-                fileDownloadCon.setReadTimeout(10000);
+                fileDownloadCon.setConnectTimeout(60000);
+                fileDownloadCon.setReadTimeout(60000);
                 fileDownloadCon.setDoOutput(true);
                 fileDownloadCon.setDoInput(true);
 
@@ -880,8 +880,8 @@ public class Astrometry //implements KeyListener
                 try {
                     getFileURL = new URL((useAlternateAstrometryServer?alternateAstrometryUrlBase:defaultAstrometryUrlBase)+"/api/jobs/"+jobID+"/annotations");
                     URLConnection fileDownloadCon = getFileURL.openConnection();
-                    fileDownloadCon.setConnectTimeout(10000);
-                    fileDownloadCon.setReadTimeout(10000);
+                    fileDownloadCon.setConnectTimeout(60000);
+                    fileDownloadCon.setReadTimeout(60000);
                     fileDownloadCon.setDoOutput(true);
                     fileDownloadCon.setDoInput(true);
 

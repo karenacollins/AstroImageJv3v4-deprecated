@@ -1461,6 +1461,7 @@ public class FitsJ
 
 		// MAKE SURE IT'S REALLY AN ISO DATETIME WITH yyyy-{m}m-{d}dT{hh:mm:ss}
 
+        if (datum.endsWith("Z")) datum=datum.substring(0, datum.length()-1);
 		int i = datum.indexOf("T");
         datum = datum.replace('/', '-');  //accomodate / instead of - for Lowell telescopes
 		int j = datum.indexOf("-");
@@ -1762,12 +1763,24 @@ public class FitsJ
 
 		try	{
 			// CHECK FOR STANDARD KEYWORD "EXPTIME" (SECS)
-
+            String tcomment = "";
 			icard = findCardWithKey ("EXPTIME",cards);
 			if (icard >= 0)
 				{
 				tstart = getCardDoubleValue (cards[icard]);
 				if (! Double.isNaN(tstart))
+					return tstart;
+				}
+            
+            // CHECK FOR KEYWORD "TELAPSE" (e.g. TESS)
+
+			icard = findCardWithKey ("TELAPSE",cards);
+			if (icard >= 0)
+				{
+				tstart = getCardDoubleValue (cards[icard]);
+				if (! Double.isNaN(tstart))
+                    tcomment = getCardComment(cards[icard]);
+                    if (tcomment.contains("[d]")) tstart = tstart*24.0*3600.0; 
 					return tstart;
 				}
 
@@ -1778,6 +1791,8 @@ public class FitsJ
 				{
 				tstart = getCardDoubleValue (cards[icard]);
 				if (! Double.isNaN(tstart))
+                    tcomment = getCardComment(cards[icard]);
+                    if (tcomment.contains("[d]")) tstart = tstart*24.0*3600.0; 
 					return tstart;
 				}
             
@@ -1883,6 +1898,38 @@ public class FitsJ
 
 /**************************************** JD METHODS **************************************************/
 
+    public static boolean isTESS(String[] cards)
+        {
+		Boolean isTess = true;
+        String value = "";
+		int icard = findCardWithKey ("TELESCOP", cards);
+		if (icard > 0)
+            {
+			value = getCardStringValue (cards[icard]);
+            if (!value.toLowerCase().contains("tess")) isTess = false;
+            }
+        icard = findCardWithKey ("INSTRUME", cards);
+		if (icard > 0)
+            {
+			value = getCardStringValue (cards[icard]);
+            if (!value.toLowerCase().contains("tess photometer")) isTess = false;
+            }
+        return isTess;
+        }
+
+	/**
+	 * Returns BJD_TDB_MID_OBS from a TESS FITS headers.
+	 */
+    
+    public static double getMeanTESSBJD (String[] cards)
+        {
+        double tstart = findDoubleValue ("TSTART", cards);
+        double tstop = findDoubleValue ("TSTOP", cards);
+        int bjdrefi = findIntValue ("BJDREFI", cards);
+        double bjdreff = findDoubleValue ("BJDREFF", cards);
+        return tstart + ((tstop-tstart)/2.0) + bjdrefi + bjdreff;
+        }
+    
 
 	/**
 	 * Returns JD from a FITS header stored in a String array.
