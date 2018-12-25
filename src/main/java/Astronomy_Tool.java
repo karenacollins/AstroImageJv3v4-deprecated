@@ -1,13 +1,12 @@
 //Astronomy_Tool.java
 
-import ij.*;
-import ij.plugin.*;
+import astroj.AstroCanvas;
+import astroj.AstroStackWindow;
+import ij.ImagePlus;
+import ij.WindowManager;
+import ij.plugin.PlugIn;
 
 import java.awt.*;
-import java.awt.Graphics.*;
-
-import astroj.*;
-import astroj.AstroStackWindow.*;
 
 /**
  * @author K.A. Collins, University of Louisville
@@ -17,14 +16,14 @@ import astroj.AstroStackWindow.*;
 public class Astronomy_Tool implements PlugIn //, ImageListener
 //public class Astronomy_Tool implements PlugInFilter, MouseListener,
 //        MouseMotionListener, MouseWheelListener, ImageListener
-        {
-        boolean resizeNoResize = true;
-        public static final boolean REFRESH = true;
-        public static final boolean NEW = false;
-        public static final boolean RESIZE = true;
-        public static final boolean NORESIZE = false;
+{
+    public static final boolean REFRESH = true;
+    public static final boolean NEW = false;
+    public static final boolean RESIZE = true;
+    public static final boolean NORESIZE = false;
+    boolean resizeNoResize = true;
 
-	// PlugInFilter METHODS
+    // PlugInFilter METHODS
 
 //	public int setup (String arg, ImagePlus im)
 //		{
@@ -33,36 +32,32 @@ public class Astronomy_Tool implements PlugIn //, ImageListener
 //		return NO_IMAGE_REQUIRED+DOES_ALL;
 //		}
 
-    public void run (String s)
-		{
+    public void run(String s) {
         Frame openFrame;
         ImagePlus imp;
-        if (s == null || s.equals(""))
-            {
+        if (s == null || s.equals("")) {
             openFrame = WindowManager.getCurrentWindow();
             imp = WindowManager.getCurrentImage();
-            }
-        else
-            {
+        } else {
             openFrame = WindowManager.getFrame(s);
             imp = WindowManager.getImage(s);
-            }
-        
-        if (openFrame instanceof ij.gui.PlotWindow || imp.getTitle().startsWith("About") || imp.getTitle().startsWith("Profile of") || imp.getTitle().startsWith("Seeing Profile")) return;
+        }
 
-        if (imp != null)
-            {
-                 
+        if (openFrame instanceof ij.gui.PlotWindow || imp.getTitle().startsWith("About") || imp.getTitle().startsWith("Profile of") || imp.getTitle().startsWith("Seeing Profile"))
+            return;
+
+        if (imp != null) {
+
             Class<?> imageWindowClass = openFrame.getClass();
             if (imageWindowClass.getName() != "astroj.AstroStackWindow")
-                    resizeNoResize = RESIZE;
+                resizeNoResize = RESIZE;
             else
-                    resizeNoResize = NORESIZE;
+                resizeNoResize = NORESIZE;
             AstroCanvas ac = new AstroCanvas(imp);
             AstroStackWindow astroWindow = new AstroStackWindow(imp, ac, NEW, resizeNoResize);
-            }
         }
     }
+}
 
 //
 //public void imageOpened(ImagePlus imp) {

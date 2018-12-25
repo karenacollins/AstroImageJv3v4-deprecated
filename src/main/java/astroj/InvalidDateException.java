@@ -8,14 +8,12 @@
 package astroj;
 
 /**
+ * @author Benot Mahe (bmahe@w3.org)
  * @version $Revision: 1.1 $
- * @author  Benot Mahe (bmahe@w3.org)
  */
-public class InvalidDateException extends Exception
-	{
-	public InvalidDateException(String msg)
-		{
-		super(msg);
-		}
-	}
+public class InvalidDateException extends Exception {
+    public InvalidDateException(String msg) {
+        super(msg);
+    }
+}
 

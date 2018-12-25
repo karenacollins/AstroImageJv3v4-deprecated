@@ -27,24 +27,22 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */ 
+ */
 
 package astroj;
 
-import java.awt.*;
-import java.awt.Color;
-import java.awt.event.*;
-import java.io.*;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import javax.swing.*;
-import javax.swing.text.*;
-import javax.swing.event.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultHighlighter;
+import javax.swing.text.Document;
+import javax.swing.text.Highlighter;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
 
-import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.HTMLDocument;
-import ij.*;
 import static ij.IJ.showMessage;
 
 /*
@@ -79,6 +77,12 @@ import static ij.IJ.showMessage;
  */
 
 public class HelpPanel extends JFrame implements ActionListener, DocumentListener {
+    final static Color HILIT_COLOR = Color.YELLOW;
+    final static Color ERROR_COLOR = Color.PINK;
+    final static String CANCEL_ACTION = "cancel-search";
+    final Color entryBg;
+    final Highlighter hilit;
+    final Highlighter.HighlightPainter painter, painter2;
     private JFrame mainFrame;
     private JPanel mainPanel;
     private JTextField entry;
@@ -90,14 +94,6 @@ public class HelpPanel extends JFrame implements ActionListener, DocumentListene
     private int end = 0;
     private String oldEntry = "";
     private String callingProgramID;
-
-    final static Color  HILIT_COLOR = Color.YELLOW;
-    final static Color  ERROR_COLOR = Color.PINK;
-    final static String CANCEL_ACTION = "cancel-search";
-
-    final Color entryBg;
-    final Highlighter hilit;
-    final Highlighter.HighlightPainter painter, painter2;
 
 
     public HelpPanel(String filename, String callingProgramName) {
@@ -114,7 +110,7 @@ public class HelpPanel extends JFrame implements ActionListener, DocumentListene
                 System.err.println("Attempted to read a bad URL: " + helpURL);
             }
         } else {
-            System.err.println("Couldn't find file: "+filename);
+            System.err.println("Couldn't find file: " + filename);
         }
 
         hilit = new DefaultHighlighter();
@@ -133,7 +129,8 @@ public class HelpPanel extends JFrame implements ActionListener, DocumentListene
     }
 
 
-    /** This method is called from within the constructor to
+    /**
+     * This method is called from within the constructor to
      * initialize the form.
      */
 
@@ -148,59 +145,59 @@ public class HelpPanel extends JFrame implements ActionListener, DocumentListene
         ImageIcon dialogFrameIcon = createImageIcon("images/help.png", "Help_Icon");
 
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle(callingProgramID+" Help");
+        setTitle(callingProgramID + " Help");
         textArea.setEditable(false);
         textArea.setPreferredSize(new Dimension(750, 750));
         jScrollPanel = new JScrollPane(textArea);
 //        jScrollPanel.setPreferredSize(new Dimension(350, 750));
         jLabel1.setText("Search:");
 
-		mainFrame = new JFrame (callingProgramID+" Help");
+        mainFrame = new JFrame(callingProgramID + " Help");
         mainFrame.setIconImage(dialogFrameIcon.getImage());
         mainFrame.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 //        mainFrame.addWindowListener(new WindowAdapter(){
 //            @Override
 //            public void windowClosing(WindowEvent e){
 //            saveAndClose();}});
-		mainPanel = new JPanel (new SpringLayout());
-		mainPanel.setBorder (BorderFactory.createEmptyBorder(10,10,10,10));
-        JPanel searchPanel = new JPanel (new SpringLayout());
+        mainPanel = new JPanel(new SpringLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel searchPanel = new JPanel(new SpringLayout());
         searchPanel.add(jLabel1);
         searchPanel.add(entry);
-        SpringUtil.makeCompactGrid (searchPanel,1,searchPanel.getComponentCount(), 2,2,2,2);
+        SpringUtil.makeCompactGrid(searchPanel, 1, searchPanel.getComponentCount(), 2, 2, 2, 2);
         mainPanel.add(searchPanel);
         mainPanel.add(jScrollPanel);
         mainPanel.add(status);
-        SpringUtil.makeCompactGrid (mainPanel,mainPanel.getComponentCount(),1, 2,2,2,2);
+        SpringUtil.makeCompactGrid(mainPanel, mainPanel.getComponentCount(), 1, 2, 2, 2, 2);
 
-		mainFrame.add (mainPanel);
-		mainFrame.pack();
-		mainFrame.setResizable (true);
+        mainFrame.add(mainPanel);
+        mainFrame.pack();
+        mainFrame.setResizable(true);
 //        mainFrame.setLocation(dialogFrameLocationX, dialogFrameLocationY);
-		mainFrame.setVisible (true);
+        mainFrame.setVisible(true);
     }
 
     public void search() {
 
 
         String s = entry.getText().toLowerCase();
-        if (!s.equalsIgnoreCase(oldEntry))
-            {
+        if (!s.equalsIgnoreCase(oldEntry)) {
             hilit.removeAllHighlights();
-            }
+        }
 
         if (s.length() <= 0) {
             message("Nothing to search");
             hilit.removeAllHighlights();
             oldEntry = "";
             return;
-            }
-         oldEntry = s;
-         String content = null;
-         try {
-             Document d = textArea.getDocument();
-             content = d.getText(0, d.getLength()).toLowerCase();
-             } catch (BadLocationException e) {}
+        }
+        oldEntry = s;
+        String content = null;
+        try {
+            Document d = textArea.getDocument();
+            content = d.getText(0, d.getLength()).toLowerCase();
+        } catch (BadLocationException e) {
+        }
 
         int index = content.indexOf(s, pos);
         hilit.removeAllHighlights();
@@ -229,9 +226,10 @@ public class HelpPanel extends JFrame implements ActionListener, DocumentListene
             int endIndex = lastIndex + wordSize;
             try {
                 hilit.addHighlight(lastIndex, endIndex, painter);
-                } catch (BadLocationException e) {}
+            } catch (BadLocationException e) {
+            }
             if (firstOffset == -1) {
-            firstOffset = lastIndex;
+                firstOffset = lastIndex;
             }
             lastIndex = endIndex;
         }
@@ -254,31 +252,21 @@ public class HelpPanel extends JFrame implements ActionListener, DocumentListene
     public void changedUpdate(DocumentEvent ev) {
     }
 
-    class CancelAction extends AbstractAction {
-        public void actionPerformed(ActionEvent ev) {
-            hilit.removeAllHighlights();
-            pos = 0;
-            end = 0;
-            entry.setBackground(entryBg);
-        }
-    }
-
-	/**
-	 * Response to pressing enter after changing text field.
-	 */
-    public void actionPerformed (ActionEvent e)
-        {
+    /**
+     * Response to pressing enter after changing text field.
+     */
+    public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
-        if (entry.getBackground()==ERROR_COLOR)
-            {
+        if (entry.getBackground() == ERROR_COLOR) {
             pos = 0;
-            }
-        else
+        } else
             pos = end;
         search();
-        }
+    }
 
-    /** Returns an ImageIcon, or null if the path was invalid. */
+    /**
+     * Returns an ImageIcon, or null if the path was invalid.
+     */
     protected ImageIcon createImageIcon(String path, String description) {
         java.net.URL imgURL = getClass().getResource(path);
         if (imgURL != null) {
@@ -286,6 +274,15 @@ public class HelpPanel extends JFrame implements ActionListener, DocumentListene
         } else {
             showMessage("Couldn't find icon file: " + path);
             return null;
+        }
+    }
+
+    class CancelAction extends AbstractAction {
+        public void actionPerformed(ActionEvent ev) {
+            hilit.removeAllHighlights();
+            pos = 0;
+            end = 0;
+            entry.setBackground(entryBg);
         }
     }
 

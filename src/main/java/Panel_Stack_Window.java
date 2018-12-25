@@ -1,10 +1,16 @@
-import ij.plugin.*;
-import ij.*;
-import ij.gui.*;
-import ij.process.*;
+import ij.IJ;
+import ij.ImagePlus;
+import ij.ImageStack;
+import ij.gui.ImageCanvas;
+import ij.gui.StackWindow;
+import ij.plugin.PlugIn;
+import ij.process.ImageProcessor;
+import ij.process.StackProcessor;
+
 import java.awt.*;
-import java.awt.image.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
 
 public class Panel_Stack_Window implements PlugIn {
 
@@ -16,32 +22,32 @@ public class Panel_Stack_Window implements PlugIn {
 
 
     class CustomCanvas extends ImageCanvas {
-    
+
         CustomCanvas(ImagePlus imp) {
             super(imp);
         }
-    
+
         public void mousePressed(MouseEvent e) {
             super.mousePressed(e);
-            IJ.log("mousePressed: ("+offScreenX(e.getX())+","+offScreenY(e.getY())+")"  +imp);
+            IJ.log("mousePressed: (" + offScreenX(e.getX()) + "," + offScreenY(e.getY()) + ")" + imp);
         }
-    
+
     } // CustomCanvas inner class
-    
-    
+
+
     class CustomStackWindow extends StackWindow implements ActionListener {
-    
-        private Button button1, button2, button3;
+
         ImagePlus imp2 = IJ.createImage("Stack", "16-bit Ramp", 600, 300, 60);
         ImagePlus imp3 = IJ.createImage("Image", "16-bit Ramp", 600, 300, 1);
         boolean firstRun = true;
-       
+        private Button button1, button2, button3;
+
         CustomStackWindow(ImagePlus imp, ImageCanvas ic) {
             super(imp, ic);
 
             addPanel();
         }
-    
+
         void addPanel() {
             Panel panel = new Panel();
             panel.setLayout(new FlowLayout(FlowLayout.RIGHT));
@@ -59,13 +65,13 @@ public class Panel_Stack_Window implements PlugIn {
             Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
             Point loc = getLocation();
             Dimension size = getSize();
-            if (loc.y+size.height>screen.height)
+            if (loc.y + size.height > screen.height)
                 getCanvas().zoomOut(0, 0);
-         }
-      
+        }
+
         public void actionPerformed(ActionEvent e) {
             Object b = e.getSource();
-            if (b==button1) {
+            if (b == button1) {
                 if (firstRun) {
                     firstRun = false;
                 } else {
@@ -76,9 +82,8 @@ public class Panel_Stack_Window implements PlugIn {
                 ImageStack s2 = null;
                 s2 = sp2.rotateLeft();
                 imp.setStack(null, s2);
-                IJ.log(""+imp);
-            }
-            else if (b == button2) {
+                IJ.log("" + imp);
+            } else if (b == button2) {
                 if (firstRun) {
                     firstRun = false;
                 } else {
@@ -89,16 +94,15 @@ public class Panel_Stack_Window implements PlugIn {
                 ImageStack s3 = null;
                 s3 = sp3.rotateLeft();
                 imp.setStack(null, s3);
-                IJ.log(""+imp);
-            }
-            else {
+                IJ.log("" + imp);
+            } else {
                 ImagePlus imp2 = IJ.createImage("Stack", "16-bit Ramp", 300, 300, 40);
                 imp.setStack(imp2.getStack());
-                IJ.log(""+imp);
+                IJ.log("" + imp);
             }
-    
+
         }
-        
+
     } // CustomStackWindow inner class
 
 } // Panel_Stack_Window class

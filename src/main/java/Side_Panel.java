@@ -1,15 +1,22 @@
-import ij.plugin.*;
-import ij.*;
-import ij.gui.*;
-import ij.process.*;
+import ij.IJ;
+import ij.ImagePlus;
+import ij.WindowManager;
+import ij.gui.ImageCanvas;
+import ij.gui.ImageWindow;
+import ij.gui.StackWindow;
+import ij.plugin.PlugIn;
+import ij.process.ByteProcessor;
+import ij.process.ImageProcessor;
+
 import java.awt.*;
-import java.awt.image.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
 
 /**
-    Adds a panel containing "Invert" and "Flip"  buttons to the right side of the current
-    image or stack. Creates a blank 400x400 byte image if no image is open.
-*/
+ * Adds a panel containing "Invert" and "Flip"  buttons to the right side of the current
+ * image or stack. Creates a blank 400x400 byte image if no image is open.
+ */
 public class Side_Panel implements PlugIn {
 
     static final int WIDTH = 400;
@@ -18,22 +25,22 @@ public class Side_Panel implements PlugIn {
     public void run(String arg) {
         ImagePlus imp = WindowManager.getCurrentImage();
         ImageProcessor ip;
-        if (imp==null) {
+        if (imp == null) {
             ip = new ByteProcessor(WIDTH, HEIGHT);
             ip.setColor(Color.white);
             ip.fill();
             imp = new ImagePlus("Side Panel Demo", ip);
         }
         CustomCanvas cc = new CustomCanvas(imp);
-        if (imp.getStackSize()>1)
+        if (imp.getStackSize() > 1)
             new CustomStackWindow(imp, cc);
         else
-           new CustomWindow(imp, cc);
+            new CustomWindow(imp, cc);
     }
 
 
     class CustomCanvas extends ImageCanvas {
-    
+
         CustomCanvas(ImagePlus imp) {
             super(imp);
         }
@@ -41,35 +48,35 @@ public class Side_Panel implements PlugIn {
         public void paint(Graphics g) {
             super.paint(g);
             int size = 40;
-            int screenSize = (int)(size*getMagnification());
-            int x = screenX(imageWidth/2 - size/2);
-            int y = screenY(imageHeight/2 - size/2);
+            int screenSize = (int) (size * getMagnification());
+            int x = screenX(imageWidth / 2 - size / 2);
+            int y = screenY(imageHeight / 2 - size / 2);
             g.setColor(Color.red);
             g.drawOval(x, y, screenSize, screenSize);
         }
-    
+
         public void mousePressed(MouseEvent e) {
             super.mousePressed(e);
-            IJ.write("mousePressed: ("+offScreenX(e.getX())+","+offScreenY(e.getY())+")");
+            IJ.write("mousePressed: (" + offScreenX(e.getX()) + "," + offScreenY(e.getY()) + ")");
         }
 
         /** Overrides handlePopupMenu() in ImageCanvas to suppress the right-click popup menu. */
-       //protected void handlePopupMenu(MouseEvent e) {
-       //}
-    
+        //protected void handlePopupMenu(MouseEvent e) {
+        //}
+
     } // CustomCanvas inner class
-    
-    
+
+
     class CustomWindow extends ImageWindow implements ActionListener {
-    
+
         private Button button1, button2;
-       
+
         CustomWindow(ImagePlus imp, ImageCanvas ic) {
             super(imp, ic);
             setLayout(new FlowLayout());
             addPanel();
         }
-    
+
         void addPanel() {
             Panel panel = new Panel();
             panel.setLayout(new GridLayout(2, 1));
@@ -82,26 +89,26 @@ public class Side_Panel implements PlugIn {
             add(panel);
             pack();
         }
-      
+
         public void actionPerformed(ActionEvent e) {
             Object b = e.getSource();
-            if (b==button1) {
+            if (b == button1) {
                 imp.getProcessor().invert();
                 imp.updateAndDraw();
             } else {
                 imp.getProcessor().flipVertical();
                 imp.updateAndDraw();
             }
-    
+
         }
-        
+
     } // CustomWindow inner class
 
-   class CustomStackWindow extends StackWindow implements ActionListener {
-    
-        private Button button1, button2;
+    class CustomStackWindow extends StackWindow implements ActionListener {
+
         ImageProcessor ip;
-       
+        private Button button1, button2;
+
         CustomStackWindow(ImagePlus imp, ImageCanvas ic) {
             super(imp, ic);
             ip = imp.getProcessor();
@@ -109,7 +116,7 @@ public class Side_Panel implements PlugIn {
             remove(sliceSelector);
             addPanel();
         }
-    
+
         void addPanel() {
             Panel panel = new Panel();
             panel.setLayout(new GridLayout(4, 1));
@@ -124,19 +131,19 @@ public class Side_Panel implements PlugIn {
             add(panel);
             pack();
         }
-      
+
         public void actionPerformed(ActionEvent e) {
             Object b = e.getSource();
-            if (b==button1) {
+            if (b == button1) {
                 ip.invert();
                 imp.updateAndDraw();
             } else {
                 ip.flipVertical();
                 imp.updateAndDraw();
             }
-    
+
         }
-        
+
     } // CustomStackWindow inner class
 
 } // Side_Panel class
