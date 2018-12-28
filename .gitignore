@@ -9,4 +9,5 @@ target
 **/*.*~
 # IntelliJ Idea
 Astronomy_.iml
-.idea
+# Shade plugin product
+dependency-reduced-pom.xml
