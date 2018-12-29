@@ -3,7 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <artifactId>Astronomy_</artifactId>
-    
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -50,7 +50,12 @@
         <dependency>
             <groupId>gov.nasa.gsfc.heasarc</groupId>
             <artifactId>nom-tam-fits</artifactId>
-            <version>1.12.0</version>
+            <version>1.14.2</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nasa.gsfc.heasarc</groupId>
+            <version>3.4.2</version>
+            <artifactId>skyview-geometry</artifactId>
         </dependency>
     </dependencies>
 
