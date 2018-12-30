@@ -120,11 +120,6 @@ public class WCS {
     boolean enoughInfo = false;
     DecimalFormat threeToLeft = new DecimalFormat("000");
 
-
-    public WCS(int naxis) {
-        initialize(naxis);
-    }
-
     public WCS(ImagePlus img) {
         NAXIS = 2;
         String[] hdr = FitsJ.getHeader(img);

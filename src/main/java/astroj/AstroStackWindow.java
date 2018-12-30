@@ -560,7 +560,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
         }
         impTitle = imp.getTitle();
 
-
+        // Here AstroStackWindow instantiates a WCS instance.
         wcs = new WCS(imp);
         goodWCS = wcs.hasWCS();
         wcs.setUseSIPAlways(useSIPAllProjections);
