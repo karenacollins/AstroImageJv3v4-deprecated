@@ -561,7 +561,7 @@ public class MeasurementTable extends ResultsTable {
 
         // FIND MEASUREMENT TABLES ASSOCIATED WITH IMAGES
 
-        if (IJ.versionLessThan("1.40")) {
+        if (IJ.versionLessThan("1.52i")) {
             Frame std = WindowManager.getFrame("Results");
             if (std != null)
                 frames.addElement("Results");

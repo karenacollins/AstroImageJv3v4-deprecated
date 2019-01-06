@@ -54,7 +54,7 @@ public class Astronomy_Tool implements PlugIn //, ImageListener
             else
                 resizeNoResize = NORESIZE;
             AstroCanvas ac = new AstroCanvas(imp);
-            AstroStackWindow astroWindow = new AstroStackWindow(imp, ac, NEW, resizeNoResize);
+            AstroStackWindow astroWindow = new AstroStackWindow(imp, ac, resizeNoResize);
         }
     }
 }

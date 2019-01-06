@@ -435,7 +435,13 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
         }
     };
 
-    public AstroStackWindow(ImagePlus imp, AstroCanvas ac, boolean refresh, boolean resize) {
+    // This constructor is simply a convenience without the resize argument.
+    // way AstroStackWindow is constructed in Astronomy_Listener.
+    public AstroStackWindow(ImagePlus imp, AstroCanvas ac) {
+        this(imp, ac, RESIZE);
+    }
+
+    public AstroStackWindow(ImagePlus imp, AstroCanvas ac, boolean resize) {
 
         super(imp, ac);
         Locale.setDefault(IJU.locale);

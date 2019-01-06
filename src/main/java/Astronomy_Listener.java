@@ -22,7 +22,7 @@ public class Astronomy_Listener implements PlugIn, ImageListener {
     public static final boolean NORESIZE = false;
 
     public void run(String arg) {
-        if (IJ.versionLessThan("1.35l")) return;
+        if (IJ.versionLessThan("1.52i")) return;
         ImagePlus.addImageListener(this);
     }
 
@@ -40,7 +40,7 @@ public class Astronomy_Listener implements PlugIn, ImageListener {
             if (!(openFrame instanceof astroj.AstroStackWindow))//(mainComponentClass.getName() != "astroj.AstroStackWindow")
             {
                 AstroCanvas ac = new AstroCanvas(imp);
-                AstroStackWindow astroWindow = new AstroStackWindow(imp, ac, NEW, RESIZE);
+                AstroStackWindow astroWindow = new AstroStackWindow(imp, ac);
             }
         }
 

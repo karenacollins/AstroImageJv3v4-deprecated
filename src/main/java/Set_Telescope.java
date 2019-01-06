@@ -31,7 +31,7 @@ public class Set_Telescope implements PlugIn {
      * Standard ImageJ PluginFilter setup routine which retrieves, displays, and re-stores telescope information.
      */
     public void run(String arg) {
-        if (IJ.versionLessThan("1.311")) return;
+        if (IJ.versionLessThan("1.52i")) return;
 
         String[] tel;
 
