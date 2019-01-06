@@ -25,7 +25,7 @@ public class Normalize_Stack implements PlugInFilter {
 
     public int setup(String arg, ImagePlus imp) {
         IJ.register(Normalize_Stack.class);
-        if (IJ.versionLessThan("1.32c"))
+        if (IJ.versionLessThan("1.52i"))
             return DONE;
         this.imp = imp;
         return DOES_ALL + SUPPORTS_MASKING;

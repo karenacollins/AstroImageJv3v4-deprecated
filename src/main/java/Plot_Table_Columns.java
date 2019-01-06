@@ -137,7 +137,7 @@ public class Plot_Table_Columns implements PlugIn {
     ImagePlus plotImage;
 
     public void run(String arg) {
-        if (IJ.versionLessThan("1.27t")) {
+        if (IJ.versionLessThan("1.52i")) {
             IJ.showMessage("Your version of ImageJ is too old!");
             return;
         }

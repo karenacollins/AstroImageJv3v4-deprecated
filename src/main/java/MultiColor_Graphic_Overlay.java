@@ -17,7 +17,7 @@ import java.util.Vector;
 public class MultiColor_Graphic_Overlay implements PlugIn {
 
     public void run(String arg) {
-        if (IJ.versionLessThan("1.39f")) return;
+        if (IJ.versionLessThan("1.52i")) return;
         ImagePlus img = IJ.getImage();
         ImageCanvas ic = img.getCanvas();
         Vector list = new Vector();

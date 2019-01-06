@@ -27,7 +27,7 @@ public class Debayer_Image_FITS implements PlugInFilter {
 
     public int setup(String arg, ImagePlus imp) {
         IJ.register(Debayer_Image_FITS.class);
-        if (IJ.versionLessThan("1.32c"))
+        if (IJ.versionLessThan("1.52i"))
             return DONE;
         imp.unlock();
         this.imp = imp;
