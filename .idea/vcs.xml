@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/imagej-ImageJA" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/aij-testing" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/esdc-tapclient" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/fredericdevernier-bislider" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/michaeltflanagan-flanagan" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/usnistgov-jama" vcs="Git" />
+  </component>
+</project>
