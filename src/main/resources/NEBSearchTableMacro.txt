@@ -1,0 +1,1065 @@
+//  The purpose of this AstroImageJ (AIJ) macro is to produce a NEB Search Table
+//  from an AIJ Measurements file. Optionally, the macro will use a user-provied
+//  plate-solved image to calculate the PA's for the stars, as well as the pixel scale.
+//  This macro will also compute the standard deviation
+//  in X and Y of image shift for a given observation session. A series of user dialogues
+//  accepts the necessary input from the user.
+//
+//  Comments or questions may be directed to the macro's author:
+//  Dennis Conti, email: dennis@astrodennis.com
+//
+//  REVISION 5.9
+var REVISION = "5.9";
+//  Revision Notes:
+//       5.9 Add option for user to enable logfile; modify user dialogue for opening measurements file
+//       5.8 Inclusion of ***Not Cleared*** when a star is not cleared;
+//           minor corrections to some comments
+//       5.7 Added file name of measurement table to top of report.
+//           Changed upper legend from Aperture...size to Aperture...radius
+//           Changed method of noting disposition
+//       5.6 Added average radius of aperture to top of the results information
+//
+//                                     SET DEBUG MODE
+//   0 = Logfile only contains NEB Search Table
+//   1 = Debug values are used for all entries and Logfile contains detailed, intermittent information
+//   2 = Same as 1, but Logfile also contains parsed strings
+//   Initialize to 0
+var debugMode = 0;
+//  
+//                                   DEFINE GLOBAL VARIABLES
+//
+// Define special characters as global variables
+var TAB = "\t";
+var COMMA = ",";
+var CR=fromCharCode(13)
+var LF=fromCharCode(10);
+
+
+// Define the output file  and path name as a global variable
+var outputFile="";
+var pathOutputFile="";
+
+// Since functions only return a data value, globalValue is
+// a global variable that can convey character strings from
+// functions. Also define success as a global value.
+var globalValue="";
+var success=false;
+//
+//  Define other global variables
+var xfitsTARGET = 0;
+var yfitsTARGET = 0;
+//
+//                                    DEFINE FUNCTIONS
+//
+//  This function will output a message to the logfile if the
+//  debugLevel passed to it is greater than or equal to the
+//  debugMode that is set for this macro run
+//
+function debugPrint (message,debugLevel) {
+    n=d2s(debugLevel,0);
+    if (debugLevel <= debugMode) {print (message);};
+    return(true);
+    }
+//
+//
+//  This function creates, from a floating point value,
+//  a right-justified character string
+//  with a user-specified number of decimal digits
+//
+function rightJustify (value,digits) {
+//  Convert value to a string and then back again in case the number of "digits" rounds it up
+//  to another power of 10
+     stringValue = d2s(value,digits);
+     decimalValue = parseFloat(stringValue);
+//  For values < 10, set numberDigits=1, otherwise find appropriate number of digits
+     numberDigits = 1;
+     while (decimalValue >= pow(10,numberDigits) ) {
+         numberDigits = numberDigits + 1;
+         };
+//  If negative, account for minus sign
+     if (decimalValue < 0) {numberDigits = numberDigits + 1;};
+     message = "Value: " + decimalValue  +"   numberDigits: " + d2s(numberDigits,0);
+     debugPrint(message,1);
+//  Determine number of leading spaces are needed (up to 5)
+     numberSpaces = 5-numberDigits;
+     if (numberSpaces <= 0 ) {numberSpaces = 0;};
+//  Add appropriate number of spaces to output string
+     string = d2s(value,digits);
+     for (i=1; i<numberSpaces; i++) {
+         string = " " + string;
+     };
+     globalValue = string;
+};
+//
+//
+//  This function returns the modulus of a number for a given divisor
+//
+function modulus (value,divisor) {
+     success = value/divisor - floor(value/divisor);
+     return(success);
+};
+//
+//
+//  This function posts an error message in the log window,
+//  closes and deletes the open outputFile, and then exits.
+//
+function errorHandling (message) {
+    print(message);
+//  if the output file was opened, then close and delete it
+    if (outputFile!="") {
+        File.close(outputFile);
+        success=File.delete (pathOutputFile);
+        if (success) {
+            print ("Temporary output file successfully deleted");
+        };
+    }
+    exit();
+}
+
+// This function validates that a string for a specified parameter
+//  is less than or equal to a certain length.  If the length of the string
+//  is valid, the function returns true; otherwise, the function produces
+//  an error message and the macro is terminated.
+//
+function checkStringLength (parameter,string,length) {
+    lenString=lengthOf(string);
+    if (lenString<length+1) {
+        return(true);
+        } else {
+        errorHandling ("**** ERROR: "+ parameter + " with a value of" + "'" + string + "'" + "is longer than allowed");
+        }
+};
+
+// This function validates that a number for a specified parameter
+//  is within a certain lower and upper range.  If the number
+//  is valid, the function returns true; otherwise, the function produces
+//  an error message and the macro is terminated.
+//
+function checkRange (parameter,number,lower,upper) {
+    if ((number>lower||number==lower) && (number<upper||number==upper)) {
+        return(true);
+        } else {
+       errorHandling ("**** ERROR: "+ parameter + " with a value of" + number + "is out of allowable range");
+     };
+}
+
+//  This function finds the position of a substring in a string
+//   where items in the string are separated by
+//   a delimiter.  If flag is true, then there is a non-empty
+//   first position. If the substring is not found, then
+//   success is returned as false and position=0.
+//
+function findPositionInHeader (string,substr,delimiter,flag) {
+//  Find the beginning character position of a substring
+//  in a string
+    indexOfSubString=indexOf(string,substr);
+    lastDelim=1;
+    stringLength=lengthOf(string);
+//  Set initial position
+    if (flag) {
+        position=0;
+         } else {
+        position=1;
+    }
+//  Loop through all instances of the delimiter in the string
+//  until the one immediately after the substring is found
+    for (i = 1; i<stringLength; i++) {
+         nextDelim=indexOf(string,delimiter,lastDelim);
+         if (nextDelim+1==indexOfSubString) {
+             position=i+1;
+             success=true;
+             return(position);
+         };
+         lastDelim=nextDelim+1;
+     }
+    success=false;
+    return(0);
+}
+
+//  This function finds the value at a certain position in a string
+//   where the values are separated by a delimiter. This function
+//   can be used in conjuntion with the above findPosition function
+//   to having found the correct position of the value being searched for.
+//   The value is stored in the global variable globalValue. The function
+//   returns false if this is the last value found in the string.
+//
+function findValue (string,position,Delimiter) {
+    nextDelim=-1;
+    for (i = 0; i<position; i++) {
+         lastDelim=nextDelim+1; 
+         nextDelim=indexOf(string,Delimiter,lastDelim);
+//  Check if this is the last item in the string
+         if (nextDelim==-1) {
+              globalValue=substring(string,lastDelim,lengthOf(string));
+              return(false);
+         }
+    }
+   globalValue=substring(string,lastDelim,nextDelim);
+   return(true);
+}
+
+//  This function gets the value in a row of the user's data,
+//   which value is associated with a particular parameter
+//   (i.e., substring) in a header row. The position of the
+//   parameter in the header row is first found, then the the corresponding
+//   value in that position in the data row is found and returned. If column
+//   flag (colflag) is true, then there is a label in col. 1
+//   of the header row, otherwise there is not. If the parameter
+//   is not found in the header, then success is returned as false.
+//
+function getData (searchString,headerString,rowString,delimiter,colflag) {
+    position=findPositionInHeader(headerString,searchString,delimiter,colflag);
+//  if the parameter was not found, then success is false and this is
+//  returned by this function also as false.
+    if (success) {success=findValue(rowString,position,delimiter);};
+    return(success);
+}
+//
+//   This function displays a string of a certain length as a user dialogue.
+//   If debugMode is non-zero, a default value is displayed.
+//
+function userString (string,default,length) {
+     Dialog.addString(string,default,length);
+}
+//
+//  This function gets a user string in globalValue from the dialogue, and
+//  checks if it is empty and the error message is NOT empty. If the latter
+//  conditions are true, then an error message is printed and
+//  the macro is terminated. Otherwise, a message is printed to the
+//  log and a check is made of the string's length.
+//
+function getUserString (errorMessage,printMessage,length) {
+     globalValue = Dialog.getString();
+     if (globalValue == "" && errorMessage !="") {
+         errorHandling("*** ERROR: " + errorMessage)};
+     message = printMessage + globalValue;
+     successPrint = debugPrint (message,1);
+     checkStringLength (printMessage,globalValue,length);
+}
+//
+//
+//  This function computes the Y angle, namely the angle from Y through the target star
+//  to the star in question, going in the direction from the Y+ axis in the direction
+//  opposite to where the X+ axis is
+//
+function getYANGLE (X,Y) {
+//  Case 1:  X < xfitsTARGET  and Y > yfitsTARGET
+if (X <= xfitsTARGET && Y > yfitsTARGET) {
+    Yangle = atan( (xfitsTARGET -X)/ (Y - yfitsTARGET)) * 180/PI;
+    message = "Case 1:" + "X= " + d2s(X,5) + " Y= " + d2s(Y,5) + " Yangle= " + d2s(Yangle,5);
+    debugPrint (message,1);
+};
+//  Case 2:  X < xfitsTARGET  and Y < yfitsTARGET
+if (X <= xfitsTARGET && Y <= yfitsTARGET) {
+    Yangle = 90 + atan( (yfitsTARGET -Y)/ (xfitsTARGET -X)) * 180/PI;
+    message = "Case 2:" + "X= " + d2s(X,5) + " Y= " + d2s(Y,5) + " Yangle= " + d2s(Yangle,5);
+    debugPrint (message,1);
+};
+//  Case 3:  X > xfitsTARGET  and Y < yfitsTARGET
+if (X > xfitsTARGET && Y < yfitsTARGET) {
+    Yangle = 270 - atan( (yfitsTARGET -Y)/ (X - xfitsTARGET)) * 180/PI;
+    message = "Case 3:" + "X= " + d2s(X,5) + " Y= " + d2s(Y,5) + " Yangle= " + d2s(Yangle,5);
+    debugPrint (message,1);
+};
+//  Case 4:  X > xfitsTARGET  and Y > yfitsTARGET
+if (X > xfitsTARGET && Y > yfitsTARGET) {
+    Yangle = 270 + atan( (Y - yfitsTARGET)/ (X - xfitsTARGET)) * 180/PI;
+    message = "Case 4:" + "X= " + d2s(X,5) + " Y= " + d2s(Y,5) + " Yangle= " + d2s(Yangle,5);
+    debugPrint (message,1);
+};
+//  Case 5:  X = xfitsTARGET  and Y > yfitsTARGET
+if (X == xfitsTARGET && Y > yfitsTARGET) {
+    Yangle = 0;
+    message = "Case 5:" + "X= " + d2s(X,5) + " Y= " + d2s(Y,5) + " Yangle= " + d2s(Yangle,5);
+    debugPrint (message,1);
+};
+//  Case 6:  X = xfitsTARGET  and Y < yfitsTARGET
+if (X == xfitsTARGET && Y < yfitsTARGET) {
+    Yangle = 180;
+    message = "Case 6:" + "X= " + d2s(X,5) + " Y= " + d2s(Y,5) + " Yangle= " + d2s(Yangle,5);
+    debugPrint (message,1);
+};
+//  Case 7:  X < xfitsTARGET  and Y = yfitsTARGET
+if (X < xfitsTARGET && Y == yfitsTARGET) {
+    Yangle = 90;
+    message = "Case 7:" + "X= " + d2s(X,5) + " Y= " + d2s(Y,5) + " Yangle= " + d2s(Yangle,5);
+    debugPrint (message,1);
+};
+//  Case 8:  X > xfitsTARGET  and Y = yfitsTARGET
+if (X > xfitsTARGET && Y == yfitsTARGET) {
+    Yangle = 270;
+    message = "Case 8:" + "X= " + d2s(X,5) + " Y= " + d2s(Y,5) + " Yangle= " + d2s(Yangle,5);
+    debugPrint (message,1);
+};
+//  Case 9:  X = xfitsTARGET  and Y = yfitsTARGET
+if (X == xfitsTARGET && Y == yfitsTARGET) {
+    Yangle = 0;
+    message = "Case 9:" + "X= " + d2s(X,5) + " Y= " + d2s(Y,5) + " Yangle= " + d2s(Yangle,5);
+    debugPrint (message,1);
+};
+return(Yangle);
+};
+//
+//  This function will find the (string) value associated with a keyword in a FIT header
+//
+function getFITstring(FITfile,keyword) {
+   i = indexOf(FITfile,keyword);
+   len = lengthOf(keyword);
+   j = indexOf(FITfile,"=",i+len);
+   k = indexOf(FITfile,"/",j+1);
+   globalValue=substring(FITfile,j+1,k-1);
+};
+//
+//
+// The following are the valid lengths of user entries.
+//  These are later used to perform range checks.
+lenTargetDepth = 6;
+lenScale = 6;
+lenMeasurementTable = 3000;
+lenDistEvent = 6;
+lenDeltaMag = 4;
+lenPA = 5;
+lenDirection = 15;
+lenNEBSearchRow = 50;
+lenTargetStar = 4;
+lenRadius = 4;
+lenCadence = 3;
+singleQuote = fromCharCode(39);
+doubleQuote = fromCharCode(34);
+newlineChar = fromCharCode(10);
+//
+//--------------------------- First, get current date and time
+//
+getDateAndTime(year,month,dayOfWeek,dayOfMonth,hour,minute,second,msec);
+//  Convert year, month, day, month, hour, and second to strings
+yearString=d2s(year,0);
+monthString=d2s(month+1,0);
+// if month+1 is less than 10, append 0 as prefix - note month=0 is January
+if (month+1<10) {
+    monthString="0"+d2s(month+1,0);
+    } else {
+    monthString=d2s(month+1,0);
+};
+// if day is less than 10, append 0 as prefix
+if (dayOfMonth<10) {
+    dayString="0"+d2s(dayOfMonth,0);
+    } else {
+    dayString=d2s(dayOfMonth,0);
+ };
+hourString=d2s(hour,0);
+minuteString=d2s(minute,0);
+secondString=d2s(second,0);
+datetime=yearString + "-" + monthString + "-" + dayString;
+//
+debugModeString = d2s(debugMode,0);
+successPrint = debugPrint("Debug Mode="+ debugModeString,1);
+//
+//                               BEGIN USER DIALOGUES
+//
+//------------------------------ Create the first page of dialogues
+//
+Dialog.create("TFOP SG1 NEB Search Table Generator");
+
+Dialog.addMessage("Details on the NEB Search Table can be found at http://astrodennis.com/TFOP_SG1_Guidelines_Latest.pdf");
+Dialog.addMessage(" ");
+//
+//  Request the predicted depth of the target
+userString("Predicted target depth (ppt)","",lenTargetDepth);
+//
+//  Request name of target star that is in the measurement table header (e.g., T1)
+userString("AIJ name of target star (e.g., T1)","T1",lenTargetStar);
+//
+//  Request NEB search radius
+userString("Search radius for potential NEBs (arc-minutes)","2.0",lenRadius);
+//
+//  Request cadence to be used when calculating RMS
+userString("Cadence to use when calculating RMS (seconds)","180",lenCadence);
+//
+//  Request user's preference for inputting pixel scale, or using a user-provided
+//  plate-solved image to later calculate the PA's for the stars within the above
+//  radius, as well as the pixel scale
+message = "Select this box if you would like the macro to use a plate-solved image to compute the Position Angles (PA's)" + newlineChar + " as well as the pixel scale.";
+Dialog.addCheckbox(message,false);
+Dialog.addString("     If above is not selected, then enter the pixel scale of this observation:","",lenScale);
+//
+//  Ask if the user would like to enable log file diagnostics
+message = "Select this box if you would like to turn on logfile diagnostics";
+Dialog.addMessage("");
+Dialog.addCheckbox(message,false);
+//
+//  Ask user to open measurement file
+Dialog.addMessage("After clicking OK, you will be asked to select the measurement file from which the report will be generated.");
+//
+Dialog.show();
+//
+//------------------------------ Get the first page of dialogue entries
+//
+//  Get predicted depth of target
+getUserString ("No predicted depth of the target was entered","Predicted target depth: ",lenTargetDepth);
+DEPTH = globalValue;
+targetDepth = parseFloat(DEPTH);
+//
+//  Get AIJ name of target star
+getUserString ("No name of target star entered","Target star: ",lenTargetStar);
+TARGET = globalValue;
+//   Initialize various variables used later that are based on TARGET name
+targetXFITString = "X(FITS)_" + TARGET;
+targetYFITString = "Y(FITS)_" + TARGET;
+//
+//  Get NEB search radius
+getUserString ("No NEB search radius entered","Search radius:",lenRadius);
+RADIUS = globalValue;
+nRadius = parseFloat(RADIUS);
+//
+//  Get Cadence choice
+getUserString("No RMS binning cadence entered","RMS binning cadence:",lenCadence);
+CADENCE = globalValue;
+requestedCadence = parseFloat(CADENCE);
+//
+//  Get choice of use of plate-solved image or not
+usePlateSolvedImage = Dialog.getCheckbox();
+SCALE = Dialog.getString();
+if (usePlateSolvedImage && SCALE!="") {errorHandling("**** ERROR: Use of plate-solved image selected, but a non-zero pixel scale also entered.");};
+if (!usePlateSolvedImage && SCALE=="") {errorHandling("**** ERROR: No pixel scale was entered.");};
+//  If use of plate-solved image was not seleted, convert pixel scale to a number
+if (!usePlateSolvedImage) {nScale=parseFloat(SCALE);};
+//
+//
+//  Get choice of debug mode and, if enabled, print out diagnostics accumualted so far
+debugChoice = Dialog.getCheckbox();
+if (debugChoice) {
+   debugMode=1;
+//  Clear the user's AIJ log window
+   print("\\Clear");
+   successPrint = debugPrint("XFITS, YFITS Strings=" + targetXFITString + " and " + targetYFITString,1);
+   successPrint = debugPrint("User entered pixel scale: " + SCALE,1);
+};
+//
+//------------------------------ Get the measurement table
+//
+// Set firstMeasTableColFlag to false indicating that the first column of the measurement
+// table header does not contains a label
+firstMeasTableColFlag = false;
+successPrint = debugPrint("First measurement table col. flag: " + firstMeasTableColFlag,1);
+//
+//  Open the user-specified measurement file and then put the file into an array by rows
+//
+filepath = File.openDialog("Select AIJ Measurements Table");
+measurementFile = File.openAsString(filepath);
+measurementFileName = File.nameWithoutExtension;
+//
+//  Determine delimiter (tab or comma) used in the
+//  input measurement table and set inputFileDelimiter
+//  to this.
+//
+fullFileName = File.name;
+indexOfperiod = lastIndexOf(fullFileName,".");
+extension = substring(fullFileName,indexOfperiod+1);
+message = "Extension= " + extension;
+debugPrint(message,1);
+if (extension == "tbl" || extension == "txt" || extension == "xls") {
+    inputFileDelimiter = TAB;
+    } else {
+           if (extension == "csv") {
+               inputFileDelimiter = COMMA;
+               } else {errorHandling("*** ERROR: file extension is not .tbl, .txt, .xls, or .csv");};
+           };
+//  Get directory of the user's measurement file
+fileDir= File.directory;
+successPrint = debugPrint("Output file to be stored in: ",fileDir);
+successPrint = debugPrint("Successfully retrieved measurement file" + measurementFileName,1);
+fileArray=split(measurementFile,"\n");
+nRows=lengthOf(fileArray);
+//  Calculate number of observations
+nObservations = nRows - 1;
+//  Check if size of measurment table is less than 3,000 rows
+if (nRows > lenMeasurementTable) {
+     errorHandling("*** ERROR: Measurement table exceeds 3,000 rows")};
+//  Get header row
+header=fileArray[0];
+//
+//
+//  Print out measurment file labels to the log
+successPrint = debugPrint("",1);
+successPrint = debugPrint("Length of header=" + lengthOf(header),1);
+successPrint = debugPrint("Labels in measurement file header are:",1);
+xfitsListIndex = 0;
+//
+//  If the first col. of the header does not contain a label,
+//  then set iStart =2
+if (firstMeasTableColFlag) {
+     iStart = 1;} else {iStart = 2;};
+//
+//  Cycle through header parameters and store star IDs in xfitsList
+//  if they have an X(FITS) value.
+//  First initialize xfitsList array
+//
+message = "iStart=" + d2s(iStart,0);
+debugPrint(message,1);
+i=1;
+success=findValue(header,i,inputFileDelimiter);
+message = "i="+ i + " extension=" + extension + " inputFileDelimiter=" + inputFileDelimiter + " globalValue=" + globalValue;
+debugPrint(message,1);
+i=2;
+success=findValue(header,i,inputFileDelimiter);
+message = "i="+ i + " extension=" + extension + " inputFileDelimiter=" + inputFileDelimiter + " globalValue=" + globalValue;
+debugPrint(message,1);
+//
+xfitsList=newArray(300);
+success=true;
+for (i=iStart; i<lengthOf(header)&&success;i++) {
+     success=findValue(header,i,inputFileDelimiter);
+     if (success) {
+        successPrint = debugPrint(globalValue,1);
+//  Check if found a target or comp XFITS() coordinate and it is not that of
+//  the target - find X(FITS)_XXX headers - note, need to eliminate X(FITS) header
+        if (substring(globalValue,0,2) == "X(" && lengthOf(globalValue) > 7) {
+           if (substring(globalValue,0,5) == "X(FIT") {
+              starID = substring(globalValue,8);
+              successPrint = debugPrint("starID: " + starID,1);
+              if (starID != TARGET) {
+                 xfitsList[xfitsListIndex] = starID;
+                 successPrint = debugPrint("Check distance of: "+ starID,1);
+                 xfitsListIndex = xfitsListIndex + 1;
+              };
+            };
+         };
+     };
+};
+//
+ 
+//------------------------------ If option selected, create the page of dialogue that requests the plate-solved image
+//
+if (usePlateSolvedImage) {
+    Dialog.create("");
+    Dialog.addMessage("After clicking OK, you will be asked to select a plate-solved file associated with this observation.");
+    Dialog.show();
+//
+//------------------------------ If option selected, get the user's plate-solved file and extract the necessary WCS keyword values
+//
+//  Read plate-solved file
+//
+    filepath = File.openDialog("Select Plate Solved File");
+    fitFile=File.openAsRawString(filepath,20000);
+    debugPrint("Successfully retrieved plate-solved file",1);
+//
+//   Find value for WCS parameter CD1_1
+    getFITstring (fitFile,"CD1_1");
+    CD11string = globalValue;
+    CD11 = parseFloat(CD11string);
+    message = "CD1_1=" + CD11string;
+    debugPrint(message,1);
+//
+//   Find value for WCS parameter CD1_2
+    getFITstring (fitFile,"CD1_2");
+    CD12string = globalValue;
+    CD12 = parseFloat(CD12string);
+    message = "CD1_2=" + CD12string;
+    debugPrint(message,1);
+//
+//   Find value for WCS parameter CD2_1
+    getFITstring (fitFile,"CD2_1");
+    CD21string = globalValue;
+    CD21 = parseFloat(CD21string);
+    message = "CD2_1=" + CD21string;
+    debugPrint(message,1);
+//
+//   Find value for WCS parameter CD2_2
+    getFITstring (fitFile,"CD2_2");
+    CD22string = globalValue;
+    CD22 = parseFloat(CD22string);
+    message = "CD2_2=" + CD22string;
+    debugPrint(message,1);
+//
+//  Compute orientation
+    det = CD11*CD22 - CD12*CD21;
+    if (det >= 0) {parity=1.0;} else {parity =-1.0;};
+    T = parity * CD11 + CD22;
+    A = parity * CD21 - CD12;
+//   Orientation = 0 to 180 deg for Y axis clockwise from North, and
+//   0 to -180 deg for Y axis counter-clockwise from North
+    orient = -atan2(A,T) *180 / PI;
+    message = "Orientation= " + d2s(orient,5) +" degrees";
+    debugPrint(message,1);
+//  Convert orientation angle to rotation angle (i.e., 0 to 360 deg)
+    if (orient > 0) {rotation = orient;} else {rotation = 360 + orient;};
+    message = "Rotation = " + d2s(rotation,5);
+    debugPrint(message,1);
+//
+//  Compute scale and convert to arc-seconds
+    nScale = sqrt(CD11*CD11 + CD12*CD12) * 3600;
+    SCALE = d2s(nScale,5);
+    message = "Scale= " + SCALE;
+    debugPrint(message,1);
+//
+//  Determine orientation of Y/X axis to N/E. The orientation is determined
+//  by different combinations of CD1_1, CD1_2, CD2_1, and CD2_2. The sign
+//  of these CD values determine different orientations of RA and DEC to
+//  different orientations of X and Y, as follows:
+//   +CD1_1  X values increase as East values increase
+//   -CD1_1: X values decrease as East values increase
+//   +CD1_2: Y values increase as East values increase
+//   -CD1_2: Y values decrease as East values increase
+//   +CD2_1  X values increase as North values increase
+//   -CD2_1: X values decrease as North values increase
+//   +CD2_2: Y values increase as North values increase
+//   -CD2_2: Y values decrease as North values increase
+//  The following are the two orientations to be considered:
+//       Orientation 1:             Orientation 2:
+//        N          Y         N                 Y
+//        |          |         |                 |
+//        |          |         |                 |
+//        +-----E    +-----X   +-----E     E-----+
+//
+//   The following CD combination are indicative of either Orientation 1 or 2, where 0
+//  indicates a "-" sign and 1 indicates a "+" sign. Each combination can thus be represented
+//  by a unique 4-bit number, i.e., by a number from 0-15:
+//     For Orientation 1:
+//       CD1_1    CD1_2    C2_1    CD2_2  Unique Number Representation
+//         1        1        0       1                13
+//         0        1        0       0                 4
+//         0        0        1       0                 2 
+//         1        0        1       1                11
+//     For Orientation 2:
+//         0        1        1       1                 7
+//         1        1        1       0                14
+//         1        0        0       0                 8
+//         0        0        0       1                 1
+//  Determination orientation number of image
+//  First determine sign of CD values
+    if (CD11 > 0) {signCD11=1;} else {signCD11 = 0;};
+    if (CD12 > 0) {signCD12=1;} else {signCD12 = 0;};
+    if (CD21 > 0) {signCD21=1;} else {signCD21 = 0;};
+    if (CD22 > 0) {signCD22=1;} else {signCD22 = 0;};
+    orientationNumberOfImage = signCD11*pow(2,3) + signCD12*pow(2,2) + signCD21*pow(2,1) + signCD22*pow(2,0);
+    message = "Orientation number of Image: " + d2s(orientationNumberOfImage,5);
+    debugPrint(message,1);
+//  Determine from above table, orientation type (i.e., 1 or 2)
+    n = orientationNumberOfImage;
+    if (n==13 || n==4 || n==2 || n==11) {
+        orientationType = 1;
+        } else {
+               if (n==7 || n==14 || n==8 || n==1) {
+                   orientationType = 2;
+                   } else {
+                          print("****** ERROR: Invalid orientation");
+                          exit();
+                          };
+               };
+    message = "Orientation type: " + d2s(orientationType,0);
+    debugPrint(message,1);
+//
+};
+//
+//
+//---------------------Create the various NEB lists and initialize NEBrelfluxavg, NEBrms, and NEBtempbin values to 0
+//  First, calculate number of pixels, based on pixel scale, that represents the user defined RADIUS
+distanceLimit = nRadius*60 / nScale;
+//  Setup various NEB arrays
+NEBlistIndex = 0;
+NEBlist = newArray(300);
+NEBdist = newArray(300);
+NEBdmag = newArray(300);
+NEBpa   = newArray(300);
+NEBrelfluxavg = newArray(300);
+NEBrms = newArray(300);
+NEBtempbin = newArray(300);
+Array.fill(NEBrelfluxavg,0.0);
+Array.fill(NEBrms,0.0);
+Array.fill(NEBtempbin,0.0);
+//
+//  Get beginning (minimum) and end (maximum) time  of the observation, and compute duration of observation
+//  Start with the first row as the minimum and the last row as the maximum
+rowString = fileArray[1];
+success=getData("JD_UTC",header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+beginUTC = parseFloat(globalValue);
+rowString = fileArray[nObservations];
+success=getData("JD_UTC",header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+endUTC = parseFloat(globalValue);
+for (i=2; i < nObservations; i++) {
+    rowString = fileArray[i];
+    success=getData("JD_UTC",header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+    if (!success) {errorHandling ("***ERROR: No JD_UTC value for the observation");};
+    jdUTC = parseFloat(globalValue);
+    if (jdUTC < beginUTC) {beginUTC = jdUTC;};
+    if (jdUTC > endUTC) {endUTC = jdUTC;};
+};
+observationDuration = (endUTC - beginUTC)*24*60;
+message = "Begin observation: " + d2s(beginUTC,6) + " UTC      End observation: " + d2s(endUTC,6) + " UTC     Duration of observation (minutes): " + d2s(observationDuration,2);
+debugPrint(message,1);
+//
+//  Compute average candence in the observation (in seconds)
+averageExpPlusDelay = observationDuration*60/(nObservations);
+binning = floor(requestedCadence/averageExpPlusDelay);
+if (binning < 1) {binning = 1;};
+message = "averageExpPlusDelay: " + d2s(averageExpPlusDelay,2) + "   binning: " + d2s(binning,0);
+debugPrint(message,1);
+//  Compute number of bins
+nBins = floor(nObservations/binning);
+successPrint = debugPrint("Number of bins: " + nBins,1);
+//
+//
+//  Cycle through all rows in the measurement table. For the first data row, see
+//  what target ("Tx") or comp stars ("Cx") are within the above distance limit
+//  from the target. For all rows, and for the stars within the required radius,
+//  sum their relative flux values
+//
+for (i=1; i<nObservations+1; i++) {
+     rowString = fileArray[i];
+//  If the first data row:
+//     1.  See what target and comp stars are within the required distance and then
+//         store their column indices in array NEBlist.
+//     2.  Get Source-Sky value of the target
+    if (i == 1) {
+//  Get XFITS, YFITS values for the target star 
+          success=getData(targetXFITString,header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+          if (!success) {errorHandling ("***ERROR: No X(FITS) value for target star");}; 
+          xfitsTARGET = parseFloat(globalValue);
+          success=getData(targetYFITString,header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+          if (!success) {errorHandling ("***ERROR: No Y(FITS) value for target star");}; 
+          yfitsTARGET = parseFloat(globalValue);
+          successPrint = debugPrint ("xfitsTARGET=" + xfitsTARGET,1);
+          successPrint = debugPrint ("yfitsTARGET=" + yfitsTARGET,1);
+//  Get the Source-Sky value of the target for later use in computing the dmag's of the NEBs
+          targetSourceSkyString = "Source-Sky_" + TARGET;
+          success=getData(targetSourceSkyString,header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+          fluxTarget = parseFloat(globalValue);
+          message = targetSourceSkyString + "=" + globalValue;
+          successPrint = debugPrint(message,1);
+//  Cycle through the stars in xfitsList to see which ones are within
+//  the distanceLimit of the target star
+          for (j = 0; j<xfitsListIndex; j++) {
+//  Get the X(FITS) and Y(FITS) location of star
+               starID = xfitsList[j];
+               successPrint = debugPrint("check: " + starID,1);
+               nebXFITSString = "X(FITS)_" + starID;
+               nebYFITSString = "Y(FITS)_" + starID;
+               success=getData(nebXFITSString,header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+               xfitSTAR = parseFloat(globalValue);
+               success=getData(nebYFITSString,header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+               yfitSTAR = parseFloat(globalValue);
+               valdist = (xfitsTARGET-xfitSTAR)*(xfitsTARGET-xfitSTAR) + (yfitsTARGET-yfitSTAR)*(yfitsTARGET-yfitSTAR);
+               distanceToTarget = sqrt(valdist);
+               successPrint = debugPrint("xfitsTARGET=" + xfitsTARGET + "   xfitSTAR=" + xfitSTAR + "   yfitsTARGET=" + yfitsTARGET + "  yfitSTAR=" +yfitSTAR,1);
+               successPrint = debugPrint("distanceToTarget = " + distanceToTarget,1);
+//  If the star is within the prescribed distance from the target, include it in the NEBlist array and store
+//  its distance in the NEBdist array
+               if (distanceToTarget <= distanceLimit) {
+                   NEBlist[NEBlistIndex] = starID;
+                   NEBdist[NEBlistIndex] = distanceToTarget * nScale;
+                   successPrint = debugPrint("NEBlist value= " + NEBlist[NEBlistIndex] + "NEBdist value= " + NEBdist[NEBlistIndex],1);
+//  Get the rel_flux of the first row of the NEB
+                   nebSourceSkyString = "Source-Sky_" + starID;
+                   success=getData(nebSourceSkyString,header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+                   fluxStar = parseFloat(globalValue);
+//  Compute the dmag of the star relative to the target
+//  Use natural log (base e) - but, log10(n) = log(n)/log(10);
+                   dmag = -2.5 * log(fluxStar/fluxTarget)/log(10);
+                   NEBdmag[NEBlistIndex] = d2s(dmag,2);
+                   successPrint = debugPrint("Dmag for " + starID + "=" + NEBdmag[NEBlistIndex],1);
+//
+// Compute PA if user selected use of a plate-solved image
+                   if (usePlateSolvedImage) {
+// Compute Y angle
+                       Yangle = getYANGLE (xfitSTAR,yfitSTAR);
+                       message = "xfitSTAR= " + d2s(xfitSTAR,5) + " yfitSTAR= " + d2s(yfitSTAR,5) + "Yangle= " + d2s(Yangle,5);
+                       debugPrint(message,1);
+//
+// Based on the Orientation, and Yangle and rotation values, compute the Position Angle (PA)
+//
+// Orientation 1:
+                       if (orientationType == 1) {
+                          if (Yangle >= rotation) {
+                                 PA = 360 - Yangle + rotation;
+                             } else {
+                                    PA = rotation - Yangle;
+                                    };
+                          };
+//  Orientation 2:
+                       if (orientationType ==2) {
+                          if (Yangle+rotation <= 360) {
+                             PA = Yangle + rotation;
+                             } else {
+                                    PA = rotation + Yangle -360;
+                                    };
+                          };
+//   Store PA for this NEB
+                       message = "PA: " + d2s(PA,1);
+                       debugPrint(message,1);
+                       NEBpa[NEBlistIndex] = PA;
+                   };
+                   NEBlistIndex = NEBlistIndex + 1;
+                   };
+               };
+           };
+//  Depending upon binning, include this row in the following computations:
+//  for each NEB in the NEBlist, compute the average of its rel_flux for later use in computing its RMS.
+//  Based on the value of binning, either include this in the running sum for the bin, or do the
+//  computation of the average
+    successPrint = debugPrint(" ",1);
+    successPrint = debugPrint("*****************  Computation of running average rel_flux ****************",1);
+    for (k=0; k<NEBlistIndex; k++) {
+        nebRelFluxString = "rel_flux_" + NEBlist[k];
+        success=getData(nebRelFluxString,header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+        relflux = parseFloat(globalValue);
+        message = "Row " + i + ": " + nebRelFluxString + "=" +  globalValue;
+        successPrint = debugPrint(message,1);
+//  Compute a running average of the NEB's relative flux
+        if (modulus(i,binning) == 0) {
+//  Add to relflux any previous values that are part of this bin
+            relflux = (relflux + NEBtempbin[k])/binning;
+            successPrint = debugPrint("Binned relflux= " + relflux,1);
+            NEBrelfluxavg[k] = NEBrelfluxavg[k] + relflux/nBins;
+            successPrint = debugPrint("nebRelFluxavg for " + NEBlist[k] + "=" + NEBrelfluxavg[k],1);
+//  Reinitialize NEBtempbin values to 0
+            NEBtempbin[k] = 0;
+        } else {
+//  If not yet ready to compute average, temporarily store relflux in NEBbin array for this NEB
+                NEBtempbin[k] = NEBtempbin[k] + relflux;
+                successPrint = debugPrint("Temp bin= " + NEBtempbin[k],1);
+                };
+   };
+};
+//
+//  For each row in the measurement table compute the running average of the Source_Radius,
+//  and then for each NEB in the NEBlist, compute the sum of the squares of the difference between
+//  the NEB's normalized rel_flux - namely, (1- rel_flux/average rel_flux).
+//  First, set averageAPERTURE to 0 and reset values of NEBtempbin array to 0.0
+successPrint = debugPrint(" ",1);
+successPrint = debugPrint("*****************  Computation of sum of squares of differences ****************",1);
+averageAPERTURE = 0;
+Array.fill(NEBtempbin,0.0);
+for (i=1; i<nObservations+1; i++) {
+    successPrint = debugPrint(" ",1);
+    iString = d2s(i,0);
+    successPrint = debugPrint("For Row " + iString + ":",1);
+//  Get this row of the measurement table
+    rowString = fileArray[i];
+//  Get the Source_Radius and add it to the running count
+    success=getData("Source_Radius",header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+    if (!success) {errorHandling ("***ERROR: No Source_Radius value for the observation");};
+    averageAPERTURE = averageAPERTURE + parseFloat(globalValue);
+//  Cycle through all of the NEBs in the list
+    for (k=0; k<NEBlistIndex; k++) {
+         successPrint = debugPrint(" ",1);
+//  Get rel_flux of the NEB
+         nebRelFluxString = "rel_flux_" + NEBlist[k];
+         success=getData(nebRelFluxString,header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+         relflux = parseFloat(globalValue);
+         relfluxString = d2s(relflux,6);
+         successPrint = debugPrint("relflux for: " + NEBlist[k] + "=" + relflux,1);
+         if (modulus(i,binning) == 0) {
+//  Add to relflux any previous values that are part of this bin
+             relflux = (relflux + NEBtempbin[k])/binning;
+             relfluxString = d2s(relflux,6);
+             successPrint = debugPrint("relflux for: " + NEBlist[k] + "=" + relfluxString,1);
+             successPrint = debugPrint("NEBrelfluxavg=" + NEBrelfluxavg[k],1);
+             NEBavg = NEBrelfluxavg[k];
+             normalizedValue = relflux/NEBavg;
+             NEBrms[k] = NEBrms[k] + (1-normalizedValue)*(1-normalizedValue);
+             successPrint = debugPrint("Normalized value= " + normalizedValue + " NEBrms=" + NEBrms[k],1);
+             NEBtempbin[k] = 0;
+         } else {
+//  If not yet ready to compute rms, temporarily store relflux in NEBbin array for this NEB
+                NEBtempbin[k] = NEBtempbin[k] + relflux;
+                };
+    };
+};
+//  Finish computing the average aperture and convert to arc-seconds
+averageAPERTURE = averageAPERTURE / nObservations;
+averageAPERTUREarcseconds = averageAPERTURE * nScale;
+successPrint = debugPrint(" ",1);
+message = "Average Aperture (pixels): " + d2s(averageAPERTURE,1) + " Average Aperture (arc-seconds): " + d2s(averageAPERTUREarcseconds,1);
+successPrint = debugPrint(message,1);
+//  Finally, compute the RMS as the sqrt of the above values/number of observations
+successPrint = debugPrint(" ",1);
+successPrint = debugPrint("*****************  Final RMS Values ****************",1);
+for (k =0; k<NEBlistIndex; k++) {
+    NEBrms[k] = sqrt(NEBrms[k]/nBins);
+    rms = d2s(NEBrms[k],5);       
+    successPrint = debugPrint("NEBrms for " + NEBlist[k] + "=" + rms,1);
+};
+
+//
+//  Create output file
+//
+//  Create the full output file name of the NEB Search Table file
+//
+pathOutputFile=fileDir + "NEB_search_table" + ".txt";
+//
+//  Open the output file as a new file
+//
+outputFile=File.open(pathOutputFile);
+//
+//   Create report title with date created and subject information
+File.append("                       TFOP NEB Search Table for:",pathOutputFile);
+File.append(CR,pathOutputFile);File.append(CR,pathOutputFile);
+File.append("           " + fullFileName,pathOutputFile);
+File.append(CR,pathOutputFile);File.append(CR,pathOutputFile);
+File.append("                 Created by AIJ macro Revision " + REVISION,pathOutputFile);
+File.append(CR,pathOutputFile);
+File.append("                          on " + datetime,pathOutputFile);
+File.append(CR,pathOutputFile);
+File.append("          ------------------------------------------------",pathOutputFile);
+File.append(CR,pathOutputFile);
+File.append("                    Target predicted depth: " + DEPTH,pathOutputFile);
+File.append(CR,pathOutputFile);
+scaleString = d2s(nScale,2);
+File.append("                    Pixel Scale (arc-seconds/pixel): " + scaleString,pathOutputFile);
+File.append(CR,pathOutputFile);
+File.append("                    Target Star: " + TARGET,pathOutputFile);
+File.append(CR,pathOutputFile);
+File.append("                    Search Radius: " + RADIUS,pathOutputFile);
+File.append(CR,pathOutputFile);
+obsDurString = d2s(observationDuration,1);
+File.append("                    Duration of Observation (min.): " + obsDurString,pathOutputFile);
+File.append(CR,pathOutputFile);
+numObsString = d2s(nObservations,0);
+File.append("                    Number of Images: " + numObsString,pathOutputFile);
+File.append(CR,pathOutputFile);
+expString = d2s(averageExpPlusDelay,1);
+File.append("                    Average Exposure Plus Delay Time (sec.): " + expString,pathOutputFile);
+File.append(CR,pathOutputFile);
+cadenceString = d2s(requestedCadence,1);
+File.append("                    Cadence Requested When Calculating RMS (sec.): " + cadenceString,pathOutputFile);
+File.append(CR,pathOutputFile);
+binningString = d2s(binning,0);
+File.append("                    Binning Used When Calculating RMS: " + binningString,pathOutputFile);
+File.append(CR,pathOutputFile);
+apertureString = d2s(averageAPERTURE,1) + " (pixels); " + d2s(averageAPERTUREarcseconds,1) + " (arc-seconds)";
+File.append("                    Average Aperture Radius: " + apertureString,pathOutputFile);
+File.append(CR,pathOutputFile);File.append(CR,pathOutputFile);
+tableHeader = "Star    Separation from target  PA (deg.)  dmag   RMS(ppt)   NEBdepth(ppt)  NEBdepth/RMS    Disposition";
+File.append(tableHeader,pathOutputFile);
+File.append(CR,pathOutputFile);
+debugPrint(tableHeader,1);
+//
+//  Cycle through each NEB and output its NEB Search Table row to the file and log file
+message = "NEBlistindex: " + d2s(NEBlistIndex,1);
+debugPrint(message,1);
+for (i=0; i<NEBlistIndex; i++) {
+//  Get dmag value
+     NEBdmagValue = NEBdmag[i];
+//  Get minute part and seconds part of distance
+     minutePart = floor(NEBdist[i]/60);
+     secondsPart = round(NEBdist[i] - floor(NEBdist[i]/60)*60);
+//  if the seconds part = 60, make it 0 and add one to minute part
+     if (secondsPart == 60) {secondsPart = 0; minutePart = minutePart + 1;};
+     distanceMinutePart = d2s(minutePart,0);
+     distanceSecondsPart = d2s(secondsPart,0);
+//  if the seonds part is <10, add a "0" prefix to its character string equivalent
+     if (secondsPart < 10) {distanceSecondsPart = "0" + distanceSecondsPart;};
+     successPrint = debugPrint("For " + NEBlist[i] + ": minute part=" + distanceMinutePart + " second part=" + distanceSecondsPart,1);
+     separation = distanceMinutePart + singleQuote + distanceSecondsPart + doubleQuote;
+     NEBpaValue = NEBpa[i];
+     X = pow(10,-NEBdmag[i]/2.50);
+     NEBdepthPPT = targetDepth * (1+X)/X;
+//  Convert RMS to ppt
+     NEBrmsPPT = NEBrms[i]*1000;
+     NEBdepthRMS = NEBdepthPPT / NEBrmsPPT;
+//  Determine notation indicating disposition
+     notation = "***Not Cleared***";
+     if (NEBdepthPPT >= 1000) {
+        notation = "Cleared-too faint";
+        } else {
+               if (NEBdepthRMS >= 5) {
+                  notation = "   Cleared";
+                  } else {
+                         if (NEBdepthRMS <5 && NEBdepthRMS >= 3) {
+                            notation = "Likely cleared";
+                            };
+                         };
+               };
+//  If the name of the NEB is two characters, append a space to the front so its row lines up
+//  with NEBs of three characters
+     lenNEBlist = lengthOf(NEBlist[i]);
+     if (lenNEBlist == 2) {NEBlist[i] = " " + NEBlist[i];};
+//  Convert NEBpaValue, NEBdmag, NEBrmsPPT, NEBdepthPPT, NEBdepthRMSstring to character strings
+//  and then right justify them
+     if (usePlateSolvedImage) {
+         rightJustify(NEBpaValue,0);
+         NEBpastring = globalValue;
+         } else {
+                 NEBpastring ="  NA";
+                 };
+     rightJustify(NEBdmagValue,2);
+     NEBdmagstring = globalValue;
+     rightJustify(NEBrmsPPT,2);
+     NEBrmsPPTstring = globalValue;
+     rightJustify(NEBdepthPPT,1);
+     NEBdepthPPTstring = globalValue;
+     rightJustify(NEBdepthRMS,1);
+     NEBdepthRMSstring = globalValue;
+     tableRow = NEBlist[i] + "                " + separation + "        " + NEBpastring + "    " + NEBdmagstring + "   " + NEBrmsPPTstring + "        " + NEBdepthPPTstring + "          " + NEBdepthRMSstring + "    " + notation;
+     File.append(tableRow,pathOutputFile);
+     File.append(CR,pathOutputFile);
+     debugPrint (tableRow,1);
+};
+File.append(CR,pathOutputFile);
+File.append("Possible dispositions of the star being the source of the target predicted depth:",pathOutputFile);
+File.append(CR,pathOutputFile);
+File.append("   Likely cleared (NEBdepth/RMS is between 3 and 5)",pathOutputFile);
+File.append(CR,pathOutputFile);
+File.append("   Cleared (NEBdepth/RMS is >= 5)",pathOutputFile);
+File.append(CR,pathOutputFile);
+File.append("   Cleared-too faint (NEBdepth >= 1000ppt)",pathOutputFile);
+File.append(CR,pathOutputFile);
+//
+//   Create rest of output file, namely the image shift calculations
+nCount=1; sCount=d2s(nCount,0) + ".  ";
+//
+File.append(CR,pathOutputFile);
+//
+//  Deterimine image shift statistics
+//
+//  Get the value in the user's file associated with each of the user-specified labels for:
+//   1.  X(FITS)_T1
+//   2.  Y(FITS)_T1
+//  Assume that such labels and values are separated by the 
+//  user-specified delimiter inputFileDelimiter
+//
+//  Cycle through each of the data rows in the user's file for the above values
+//  Sum X(FITS)'s and Y(FITS)'s
+XFITS = newArray(nObservations);
+YFITS = newArray(nObservations);
+for (k=1; k<nObservations+1; k++) {
+     rowString=fileArray[k];
+     kString = d2s(k,0);
+     successPrint = debugPrint("k=" + kString + " " + rowString,2);
+     success=getData("X(FITS)_T1",header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+     XFITS[k-1] = globalValue;
+//
+     success=getData("Y(FITS)_T1",header,rowString,inputFileDelimiter,firstMeasTableColFlag);
+     YFITS[k-1] = globalValue;
+};
+Array.getStatistics(XFITS,minXFITS,maxXFITS,meanXFITS,stdDevXFITS);
+successPrint = debugPrint("min X(FITS)= " + minXFITS + " " + "max X(FITS)= " + maxXFITS + " " + "stdev X(FITS)=" + stdDevXFITS,1);
+Array.getStatistics(YFITS,minYFITS,maxYFITS,meanYFITS,stdDevYFITS);
+successPrint = debugPrint("min Y(FITS)= " + minYFITS + " " + "max Y(FITS)= " + maxYFITS + " " + "stdev Y(FITS)=" + stdDevYFITS,1);
+//  Convert stdev's in pixels to arc-seconds based on SCALE;
+stdevX = nScale * stdDevXFITS;
+stdevY = nScale * stdDevYFITS;
+maxDevInX = maxXFITS-minXFITS;
+maxDevInY = maxYFITS-minYFITS;
+//  Output image shift information
+shiftMessage1 = "Image shift statistics:";
+shiftMessage2 = "             stdev.(arc-seconds): " + stdevX + " in X and " + stdevY + " in Y";
+shiftMessage3 = "             max. deviation (pixels): " + maxDevInX + " in X and " + maxDevInY + " in Y";
+nCount=nCount+1; sCount=d2s(nCount,0) + ".  ";
+File.append(shiftMessage1,pathOutputFile);
+File.append(CR,pathOutputFile);
+File.append(shiftMessage2,pathOutputFile);
+File.append(CR,pathOutputFile);
+File.append(shiftMessage3,pathOutputFile);
+//
+//  Print success message to dialogue
+Dialog.create("");
+Dialog.addMessage("NEB Search Table can be found in:");
+Dialog.addMessage(pathOutputFile);
+//
+Dialog.show();
+//
+//  Close the output file
+File.close(outputFile);
+
+exit();

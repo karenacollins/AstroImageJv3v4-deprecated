@@ -1,0 +1,13 @@
+.classpath
+.project
+.settings
+# Class files
+**/*.class
+# Maven build dir
+target
+# Emacs turds
+**/*.*~
+# IntelliJ Idea
+Astronomy_.iml
+# Shade plugin product
+dependency-reduced-pom.xml
