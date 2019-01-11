@@ -72,30 +72,34 @@ disable for the type of Java application development we are doing.
 On the next pane that comes up, select IDE Features Trainer if you are
 new to IntelliJ.
 
-## The First Project
+## Getting the Project
 
-Let's start with something easy! We will start with the three dependencies that we need to build from source.
+This project is quite tricky because it has multiple subprojects.
 
-In the next window that comes up, click "Check out from Version Control" with Git as your choice. Paste in this URL:
+In Git, subprojects are usually stored in submodules. Confusingly
+Maven also uses the term modules, and it is often the case
+that there git submodules and Maven modules have a one-to-one
+correspondence. With luck, understanding this distinction is a 
+can that can be kicked down the road.
 
-```https://github.com/observatree/michaeltflanagan-flanagan```
+As of version 2018.3 IntelliJ IDEA makes cloning a project with
+git submodules transparent.
 
-You will be get a balloon in the lower-right hand corner of the IDE
-window asking whether you want IntelliJ to pay attention to the
-project's `pom.xml` file. You most defintely want to say "Yes" to
-this! If you overlook or dismiss the balloon, you get another chance.
+IntelliJ IDEA also understands Maven aggregator projects that
+inform it of multiple Maven modules.
 
-Typically, the project opens without showing the Project Navigator, click "1:
-Project" near the upper left of the window and the navigator will
-appear on the left.
+For the AstroImageJ project, the GitHub URL to clone from is:
 
-This is your second chance to get the InteilliJ to pay attention to
-the pom.xml file if you didn't already. Right-click on the root node,
-select Maven and then Reimport.
+```https://github.com/observatree/AstroImageJ```
 
-Now build the project. Again, right-click on the root node and choose rebuild.
+The subprojects in this project are large. This is because the ImageJA
+subproject has many years of changes, and the aij-testing subproject
+has hundreds of MB of images. Therefore the clone of the repo will
+take many minutes. This process shouldn't be interrupted.
 
-You will get a warning! The SDK for the project is not yet
+Try to build the project. You will get a warning!
+
+The SDK for the project is not yet
 configured! ("SDK" and "JDK" are synonyms in Java projects.)  You will
 be prompted to create a new JDK, and then assign it to the
 project. You only have to create a new JDK once.  All you are doing is
@@ -103,85 +107,16 @@ informing IntelliJ about the location of the JDK you installed
 earlier. Once it knows about it, it will index it and make it easy to
 assign it to any project.
 
-Even though this is a 1.8 JDK, it seems it supports language features
-all the way to Java 11, "11 - Local variable syntax for lambda
-parameters." If it's actually true, I see no reason not to allow
-the most modern language features, so leave that default. On the 
-other hand, I don't understand how the JDK 8 can support Java 11
-features, so perhaps this is just misleading UI.
+If something goes wrong, compare the project structure that IntelliJ
+has deduced from the various pom.xml files with this project structure:
 
-The project should build cleanly. In fact, it should build so cleanly
-that the build messages window that automatically opens when there
-are warnings or errors won't automatically open. At the bottom
-of the window, you can click on '0: Messages' to see a few
-informational messages about the build.
+![](./grabs/ProjectStructure.png)
 
-We also need to install the project's "artifact" which is the
-flanagan.jar, so that other projects (the Astronomy_ project) can use
-it. This is done by opening the Maven sidebar in the upper right and
-running the "install" lifecycle. See screenshot showing the install
-lifecycle selected in the upper right, which you right click and run,
-and then you'll se the successfully-completed
-run of the install lifecyle at the bottom:
-
-![](./grabs/MavenInstallLifecycle.png)
-
-What is that doing? It is creating and populating a local Maven repo
-with the dependencies our main project needs. The Maven repo has
-nothing to do with a Git repo. By default it is located as a hidden
-directory under your home directory named ".m2".
-
-## The Next Three Projects
-
-There are three more dependencies that need to be built locally. The GitHub URLs to clone them are:
-
-* ```https://github.com/observatree/fredericdevernier-bislider```
-* ```https://github.com/observatree/usnistgov-jama```
-* ```https://github.com/observatree/esdc-tapclient```
-
-Repeat the preceding for these three projects. Note that you won't have
-to get a JDK since you already have that, but you will have to set it
-as the JDK for each project.
-
-To open a new project, select File, then New, then Project from Version Control,
-then Git, and then supply one of the above URLs.
-
-Be sure to complete building each project with the Maven install step.
-
-## The AIJ Project
-
-Finally we get to the project we are really interested in.
-
-This project is substantially trickier because it has two subprojects:
-the ImageJA project and the Astronomy_ project. In fact, there is a
-third subproject devoted to testing (which we don't build)
-
-In Git, subprojects are represented by submodules. With luck, IntelliJ
-makes cloning a project with submodules transparent. However, as
-time goes on, it will likely be impossible to use Git effectively
-entirely through the IDE. In other words it is important to know 
-what Git is actually doing.
-
-Additional complexity is that this projects has six dependencies,
-three of which you just built as the first three projects above.
-If the Maven installs have been done correctly, the additional
-complexity will be invisible.
-
-For the AIJ project, the GitHub URL to clone from is:
-
-```https://github.com/observatree/aij```
-
-The subprojects in this project are large. This is because the ImageJA
-subproject has many years of changes, and the aij-testing subproject
-has hundreds of MB of images. Therefore the clone of the repo will
-take many minutes. This process shouldn't be interrupted or you may
-end up with incomplete checkouts.
-
-Use the project navigator to open the submodules node. Under it will
-be an imagej-ImageJA node. Right click on it. It should build cleanly.
-
-Repeat, but this time right-click on the karenacollins-AstroImageJ
-node. It should build cleanly.
+If the project structure is correct
+the only errors or warnings should be deprecation warnings
+that might have to be addressed if the project is ported to even more
+recent versions of Java.
 
 You are now ready to edit and debug the project. It will be enormously
-helpful to get a debugging setup working. See [Debugging.md](./Debugging.md).
+helpful to get a debugging setup working. One configuration is already 
+set up. For the way it was set up, see [Debugging.md](./Debugging.md).

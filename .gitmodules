@@ -7,9 +7,6 @@
 [submodule "submodules/fredericdevernier-bislider"]
 	path = submodules/fredericdevernier-bislider
 	url = https://github.com/observatree/fredericdevernier-bislider.git
-[submodule "submodules/usnistgov-jama"]
-	path = submodules/usnistgov-jama
-	url = https://github.com/observatree/usnistgov-jama.git
 [submodule "submodules/michaeltflanagan-flanagan"]
 	path = submodules/michaeltflanagan-flanagan
 	url = https://github.com/observatree/michaeltflanagan-flanagan.git
