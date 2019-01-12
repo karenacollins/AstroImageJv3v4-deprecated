@@ -1,36 +1,31 @@
 # AIJ - Port of AstroImageJ to Java 8
 
-The directions below assume you have a command-line development environment set up.
+The quick start below assumes you have a command-line development environment set up, including Git, Java 8 and Maven.
 
 If you don't have that, try these directions: [DevelopmentEnvironment.md](./docs/DevelopmentEnvironment.md).
 
-Getting the Sources
--------------------
+Quick Start
+-----------
 
-Five codebases, consisting of ImageJA and AstroImageJ and three dependency libraries,
-are checked out simultaneously with the following command:
+Five codebases, consisting of ImageJ and AstroImageJ and three dependency libraries,
+are cloned simultaneously with the following command:
 
 ```
 $ git clone --recursive git@github.com:observatree/AstroImageJ.git
 ```
 
-Additionally, the preceding command will check out a system test or "smoke test" plan.
-
-An ImageJ plugin has much the same relationship to ImageJ as an enterprise application
-has to an application server. The somewhat complex structure of the top-level project
-and subprojects is described under [Project Structure](#project-structure) below.
-
-Building the Submodules and AstroImageJ
----------------------------------------
-
-In the top-level directory, do:
+To build the project:
 
 ```
+$ cd AstroImageJ
 $ mvn install
 $ mvn source:jar install
 ```
 
-Your local Maven repository will then contain:
+(The only warnings that will occur are associated with `nom.tam.fits` library being shaded twice by the shade plugin.
+The correct fix or workaround has not been identified, but the warnings are harmless.)
+
+Your local Maven repository will then have had installed into it these artificts,
 
 * `Astronomy_-4.0-SNAPSHOT.jar`
 * `ij-4.0-SNAPSHOT.jar`
@@ -39,6 +34,18 @@ Your local Maven repository will then contain:
 * `GacsConnection-2.0.jar`
 
 and the corresponding source jars.
+
+Although it is probably preferable to launch the project from an IDE, it can be launched from 
+the command line by doing:
+
+```
+$ cd plugin
+$ mvn exec:java -Dexec.mainClass="ij.ImageJ" -Dexec.classpathScope=test
+```
+
+(Setting `classpathScope` to `test` is a workaround for the fact that the `exec-maven-plugin` does not provide jars with scope `provided`.
+An ImageJ plugin has much the same relationship to ImageJ as a Java enterprise application has to an enterprise application server. Since we aren't
+deploying into a running copy of ImageJ, ImageJ has to be provided.)
 
 ## Project Structure
 

@@ -55,7 +55,7 @@ build of the JDK. Unless, you are controlled by a timid IT department,
 the higher one is better, because it has more fixes.
 
 Install JDK 8u192 or whatever is the latest-greatest JDK 8. (Obviously this is
-not required if you have already completed the comman-line development environment,
+not required if you have already completed the command-line development environment,
 and you will instead use the JDK previously installed by SDKMAN.)
 
 For both Git and the JDK, make note of where they were installed
@@ -63,7 +63,7 @@ because IntelliJ may not automatically find them.  For example, you
 may have put them on the D: drive on a Windows machine and IntelliJ
 may not look there.
 
-Now launch IntelliJ Idea Ultimate. It's going to run you
+Now launch IntelliJ IDEA Ultimate. It's going to run you
 through a bunch of preference choices. On the
 "Tune IDEA to your tasks" pane, you really only need Java Frameworks,
 Build Tools, Version Controls and Test Tools. All the rest you can
