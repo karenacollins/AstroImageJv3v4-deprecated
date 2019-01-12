@@ -22,6 +22,7 @@ import java.awt.event.ActionListener;
  * @date 2008-JUL-31
  * @changes Added pixel shifting
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class RGB_Composer implements ActionListener, PlugIn {
     static int VERTICAL = BoxLayout.PAGE_AXIS;
     static int HORIZONTAL = BoxLayout.LINE_AXIS;

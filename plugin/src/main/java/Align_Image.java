@@ -31,6 +31,7 @@ import java.util.Properties;
  * @date 2009-FEB-09
  * @changes Added replace option and cleaned up stack label problem.
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class Align_Image implements PlugInFilter {
     public static int SHIFT_ONLY = 1;
     public static int SHIFT_ROTATE_SCALE = 3;

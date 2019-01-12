@@ -26,6 +26,7 @@ import static org.json.simple.JSONValue.toJSONString;
 /**
  *
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class Astrometry //implements KeyListener
 {
     final static int[] DIR_X_OFFSET = new int[]{0, 1, 1, 1, 0, -1, -1, -1};

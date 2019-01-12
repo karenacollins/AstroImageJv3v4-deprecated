@@ -19,6 +19,7 @@ import java.util.Locale;
 /**
  * Plots radial profile of star-like object.
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class Seeing_Profile implements PlugInFilter {
     static public double SEEING_RADIUS1 = 1.7;    // IN UNITS OF fwhm
     static public double SEEING_RADIUS2 = 1.9;

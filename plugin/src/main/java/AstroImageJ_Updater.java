@@ -24,6 +24,7 @@ import java.util.Vector;
 /**
  * This plugin implements the Help/Update AstroImageJ command.
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class AstroImageJ_Updater implements PlugIn {
 
     public static final String URL = "http://www.astro.louisville.edu/software/astroimagej/updates";

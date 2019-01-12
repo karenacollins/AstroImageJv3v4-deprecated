@@ -42,6 +42,7 @@ import java.io.*;
  * @author rharder@users.sf.net
  * @version 1.0.1
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class FileDrop {
     /**
      * Discover if the running JVM is modern enough to have drag and drop.

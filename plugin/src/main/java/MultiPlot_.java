@@ -56,6 +56,7 @@ import java.util.*;
  * To create version outside of the Astronomy plugins, comment in the "// plain ..." lines and comment out the "// astroj ..." lines
  * @date 2009-FEB-09
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class MultiPlot_ implements PlugIn {
     static public boolean updatePlotRunning;
     static boolean panelsUpdating;

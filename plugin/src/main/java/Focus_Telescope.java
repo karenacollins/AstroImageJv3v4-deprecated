@@ -37,6 +37,7 @@ import java.awt.event.ActionListener;
  * @date 2010-DEC_01
  * @change Dynamic update of table availability.
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class Focus_Telescope implements ActionListener, PlugIn {
     static String USE_TEXTAREA = "Input values by hand";
     static String USE_TABLE_WIDTHS = "Get image width values from a measurement table";

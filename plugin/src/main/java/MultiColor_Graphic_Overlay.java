@@ -14,6 +14,7 @@ import java.util.Vector;
 /**
  * This plugin demonstrates how to display color objects in a non-destructive graphic overlay.
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class MultiColor_Graphic_Overlay implements PlugIn {
 
     public void run(String arg) {

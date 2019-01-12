@@ -26,6 +26,7 @@ import java.awt.*;
  * To create version outside of the Astronomy plugins, comment in the "// plain ..." lines and comment out the "// astroj ..." lines
  * @date 2009-FEB-09
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class Plot_Table_Columns implements PlugIn {
     int maxCurves = 8;
     String title = "title";

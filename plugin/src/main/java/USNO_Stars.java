@@ -16,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 
+@SuppressWarnings({"unchecked", "deprecation"})
 public class USNO_Stars implements PlugInFilter {
     static String IDENT = "Identifier";
     static String RA = "R.A.[hr]";

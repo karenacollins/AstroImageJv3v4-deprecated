@@ -43,6 +43,7 @@ import java.util.*;
 /**
  * @author Karen
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class AstroStackWindow extends StackWindow implements LayoutManager, ActionListener,
         MouseListener, MouseMotionListener, MouseWheelListener,
         KeyListener, ItemListener {

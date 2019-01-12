@@ -27,6 +27,7 @@ import java.text.DecimalFormat;
  * @date 2014-Dec-14
  * @changes Modified for AIJ compatibility.
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class RGB_Composer_AIJ implements ActionListener, PlugIn {
     static int VERTICAL = BoxLayout.PAGE_AXIS;
     static int HORIZONTAL = BoxLayout.LINE_AXIS;

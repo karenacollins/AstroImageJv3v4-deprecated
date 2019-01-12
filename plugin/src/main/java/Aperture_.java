@@ -59,6 +59,7 @@ import java.util.Locale;
  * @changes Merged fix from F.V. Hessman - now uses the centers of pixels
  * as a measure of position when the user has turned off the automatic centering.
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class Aperture_ implements PlugInFilter {
     public static String AP_IMAGE = "Label";
     public static String AP_SLICE = "slice";

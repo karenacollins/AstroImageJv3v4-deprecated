@@ -25,6 +25,7 @@ import java.util.Vector;
  * @version 1.4
  * @date 2006-Sep-11
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class MeasurementTable extends ResultsTable {
     public static String PREFIX = "Measurements";
     public static String RESULTS = "Results";

@@ -18,6 +18,7 @@ import java.awt.event.MouseEvent;
  * "Flip" buttons. If no images are open, creates a blank 400x200 byte image,
  * otherwise.
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class Panel_Window implements PlugIn {
 
     static final int WIDTH = 400;

@@ -14,6 +14,7 @@ import java.util.Vector;
 /**
  * A special ImageCanvas which displays lists of ROIs in a non-destructive overlay.
  */
+@SuppressWarnings("unchecked")
 public class OverlayCanvas extends ImageCanvas {
     /**
      * A Vector for storing the ROIs in the overlay.

@@ -32,6 +32,7 @@ import java.util.*;
  * @version 1.0
  * @date 2011-12-27
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class AstroConverter implements ItemListener, ActionListener, ChangeListener, MouseListener   // PropertyChangeListener, MouseMotionListener, MouseWheelListener,
 {
     public static final boolean FORWARD = true;

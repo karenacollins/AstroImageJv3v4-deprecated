@@ -28,6 +28,7 @@ import java.awt.event.ItemListener;
  * @date 2008-02-26
  * @changes Switched from FitsHeader to FitsJ for even BETTER support of stacks! (FVH)
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class CCD_Calibration implements PlugIn, ActionListener, ItemListener {
     public static String SUFFIX = "_cal";
 

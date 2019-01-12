@@ -48,6 +48,7 @@ import java.util.zip.GZIPOutputStream;
  * @version 2.0
  * @date 2012-04-01
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class Data_Processor implements PlugIn, ActionListener, ChangeListener, //,KeyListener
         ItemListener, MouseListener, MouseMotionListener, MouseWheelListener, PropertyChangeListener {
     final static int FAILED = 0;

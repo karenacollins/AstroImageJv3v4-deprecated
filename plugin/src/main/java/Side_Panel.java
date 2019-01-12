@@ -17,6 +17,7 @@ import java.awt.event.MouseEvent;
  * Adds a panel containing "Invert" and "Flip"  buttons to the right side of the current
  * image or stack. Creates a blank 400x400 byte image if no image is open.
  */
+@SuppressWarnings({"unchecked", "deprecation"})
 public class Side_Panel implements PlugIn {
 
     static final int WIDTH = 400;
