@@ -19,8 +19,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.PixelGrabber;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -28,17 +26,6 @@ import java.net.*;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.*;
-
-//import ij.measure.*;
-//import ij.plugin.filter.*;
-//import ij.plugin.frame.*;
-//import ij.macro.Interpreter;
-//import java.awt.image.*;
-//import javax.swing.border.TitledBorder;
-//import javax.swing.event.*;
-//import java.util.Properties;
-//import java.util.EventListener;
-
 
 /**
  * @author Karen
@@ -97,6 +84,10 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
     DecimalFormat sixPlaces = new DecimalFormat("0.000000", IJU.dfs);
     DecimalFormat uptoSixPlaces = new DecimalFormat("0.######", IJU.dfs);
     DecimalFormat scientificSixPlaces = new DecimalFormat("0.######E00", IJU.dfs);
+    // The variables lastHistMin and lastHisMax are used to control the caching of stats.
+    final static double HISTOGRAM_INVALID = -1.0;
+    double lastHistMin = HISTOGRAM_INVALID;
+    double lastHistMax = HISTOGRAM_INVALID;
     ImageStatistics stats;
     double startDragX, startDragY, startDragCenX, startDragCenY, endDragX, endDragY;
     int origCanvasHeight, origCanvasWidth;
@@ -437,7 +428,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
     };
 
     // This constructor is simply a convenience without the resize argument.
-    // way AstroStackWindow is constructed in Astronomy_Listener.
+    // This is the way AstroStackWindow is constructed in Astronomy_Listener.
     public AstroStackWindow(ImagePlus imp, AstroCanvas ac) {
         this(imp, ac, RESIZE);
     }
@@ -496,8 +487,6 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
 //                        }
 //                    }
 
-
-        this.imp = imp;
         this.ac = ac;
         cal = imp.getCalibration();
 
@@ -505,7 +494,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
 
 //                super.ic.setBackground(Color.WHITE);
 
-        getStatistics();
+        getStatistics(false);
         minValue = stats.min;
         maxValue = stats.max;
         min = minValue;
@@ -745,191 +734,6 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
 
     }
 
-//        void updatePhotometerOverlay()
-//                {
-////                apertureChanged = Prefs.get("setaperture.aperturechanged", apertureChanged);
-////
-////                if ((apertureOverlay.size() > 0) && !apertureChanged)
-////                    {
-////                    apertureOverlay.set   StrokeColor(mouseApertureColor);
-////                    radiusRoi.setLocation((int)(lastImageX-photom.radius+0.5), (int)(lastImageY-photom.radius+0.5));
-////                    if (showSkyOverlay)
-////                        {
-////                        rBack1Roi.setLocation((int) (lastImageX - photom.rBack1 + 0.5), (int) (lastImageY - photom.rBack1 + 0.5));
-////                        rBack2Roi.setLocation((int)(lastImageX-photom.rBack2+0.5), (int)(lastImageY-photom.rBack2+0.5));
-////                        }
-////                    Graphics g = ac.getGraphics();
-////                    ac.paint(g);
-////                    }
-////                else
-////                    {
-////                    showSkyOverlay = Prefs.get ("aperture.skyoverlay", showSkyOverlay);
-////                    Prefs.set("setaperture.aperturechanged", false);
-////                    apertureOverlay.clear();
-////                    radius = Prefs.get("aperture.radius", radius);
-////                    rBack1 = Prefs.get("aperture.rback1",rBack1);
-////                    rBack2 = Prefs.get("aperture.rback2",rBack2);
-////                    removeBackStars = Prefs.get("aperture.removebackstars", removeBackStars);
-////                    photom.setSourceApertureRadius(radius);
-////                    photom.setBackgroundApertureRadii(rBack1,rBack2);
-////                    photom.setRemoveBackStars(removeBackStars);
-////                    apertureOverlay.setStrokeColor(mouseApertureColor);
-////                    radiusRoi = new ij.gui.OvalRoi((int)(lastImageX-photom.radius+0.5), (int)(lastImageY-photom.radius+0.5), (int)(photom.radius*2.0), (int)(photom.radius*2.0));
-////                    apertureOverlay.add(radiusRoi);
-////                    if (showSkyOverlay)
-////                        {
-////                        rBack1Roi = new ij.gui.OvalRoi((int)(lastImageX-photom.rBack1+0.5), (int)(lastImageY-photom.rBack1+0.5), (int)(photom.rBack1*2.0), (int)(photom.rBack1*2.0));
-////                        rBack2Roi = new ij.gui.OvalRoi((int)(lastImageX-photom.rBack2+0.5), (int)(lastImageY-photom.rBack2+0.5), (int)(photom.rBack2*2.0), (int)(photom.rBack2*2.0));
-////                        apertureOverlay.add(rBack1Roi);
-////                        apertureOverlay.add(rBack2Roi);
-////                        }
-////                    imp.setOverlay(apertureOverlay);
-////                    }
-//                Thread tt = new Thread()
-//                    {
-//                    public void run()
-//                        {
-//                Graphics g = ac.getGraphics();
-//                ((Graphics2D)g).setTransform(ac.invCanvTrans);
-//                ac.transEnabled = false;
-//                g.setColor(mouseApertureColor);
-//                double imageX = ac.offScreenXD(screenX);
-//                double imageY = ac.offScreenYD(screenY);
-//
-//                int sx = ac.screenXD (imageX);
-//                int sy = ac.screenYD (imageY);
-//
-//                int x1 = ac.screenXD (imageX-radius);
-//                int w1 = ac.screenXD (imageX+radius)-x1;
-//                int y1 = ac.screenYD (imageY-radius);
-//                int h1 = ac.screenYD (imageY+radius)-y1;
-//                int x2 = ac.screenXD (imageX-rBack1);
-//                int x3 = ac.screenXD (imageX-rBack2);
-//                int w2 = ac.screenXD (imageX+rBack1)-x2;
-//                int w3 = ac.screenXD (imageX+rBack2)-x3;
-//                int y2 = ac.screenYD (imageY-rBack1);
-//                int y3 = ac.screenYD (imageY-rBack2);
-//                int h2 = ac.screenYD (imageY+rBack1)-y2;
-//                int h3 = ac.screenYD (imageY+rBack2)-y3;
-//
-//                g.drawOval (x1,y1,w1,h1);
-//
-//
-//                if (showSkyOverlay)
-//                    {
-//
-//                    g.drawOval (x2,y2,w2,h2);
-//                    g.drawOval (x3,y3,w3,h3);
-//                    }
-//                clipX = (x3<=oldX3)?x3:oldX3;
-//                clipY = (y3<=oldY3)?y3:oldY3;
-//                clipWidth = ((x3+w3>=oldX3+oldW3)?x3+w3:oldX3+oldW3) - clipX + 1;
-//                clipHeight = ((y3+h3>=oldY3+oldH3)?y3+h3:oldY3+oldH3) - clipY + 1;
-//                clipX-=2; clipY-=2;
-//                clipWidth+=4; clipHeight+=4;
-//                oldX3=x3;
-//                oldY3=y3;
-//                oldW3=w3;
-//                oldH3=h3;
-//
-//                ac.transEnabled = true;
-//                ((Graphics2D)g).setTransform(ac.canvTrans);
-//
-//                        ac.repaint(ac.getNetFlipX()?ac.getWidth()-clipWidth-clipX:clipX, ac.getNetFlipY()?ac.getHeight()-clipHeight-clipY:clipY, clipWidth, clipHeight);
-//                        }
-//                    };
-//                tt.start();
-//                Thread.yield();
-//                }
-
-    // This method returns a buffered image with the contents of an image
-    public static BufferedImage toBufferedImage(Image image) {
-        if (image instanceof BufferedImage) {
-            return (BufferedImage) image;
-        }
-
-        // This code ensures that all the pixels in the image are loaded
-        image = new ImageIcon(image).getImage();
-
-        // Determine if the image has transparent pixels; for this method's
-        // implementation, see Determining If an Image Has Transparent Pixels
-        boolean hasAlpha = hasAlpha(image);
-
-        // Create a buffered image with a format that's compatible with the screen
-        BufferedImage bimage = null;
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        try {
-            // Determine the type of transparency of the new buffered image
-            int transparency = Transparency.OPAQUE;
-            if (hasAlpha) {
-                transparency = Transparency.BITMASK;
-            }
-
-            // Create the buffered image
-            GraphicsDevice gs = ge.getDefaultScreenDevice();
-            GraphicsConfiguration gc = gs.getDefaultConfiguration();
-            bimage = gc.createCompatibleImage(
-                    image.getWidth(null), image.getHeight(null), transparency);
-        } catch (HeadlessException e) {
-            // The system does not have a screen
-        }
-
-        if (bimage == null) {
-            // Create a buffered image using the default color model
-            int type = BufferedImage.TYPE_INT_RGB;
-            if (hasAlpha) {
-                type = BufferedImage.TYPE_INT_ARGB;
-            }
-            bimage = new BufferedImage(image.getWidth(null), image.getHeight(null), type);
-        }
-
-        // Copy image to buffered image
-        Graphics g = bimage.createGraphics();
-
-        // Paint the image onto the buffered image
-        g.drawImage(image, 0, 0, null);
-        g.dispose();
-
-        return bimage;
-    }
-
-//            class thisDocumentListener implements DocumentListener
-//                {
-//                public void insertUpdate (DocumentEvent ev)
-//                    {
-//                    IJ.log("insert");
-//                    }
-//                public void removeUpdate (DocumentEvent ev)
-//                    {
-//                    IJ.log("remove");
-//                    }
-//                public void changedUpdate (DocumentEvent ev)
-//                    {
-//                    IJ.log("changed");
-//                    }
-//                }
-
-    // This method returns true if the specified image has transparent pixels
-    public static boolean hasAlpha(Image image) {
-        // If buffered image, the color model is readily available
-        if (image instanceof BufferedImage) {
-            BufferedImage bimage = (BufferedImage) image;
-            return bimage.getColorModel().hasAlpha();
-        }
-
-        // Use a pixel grabber to retrieve the image's color model;
-        // grabbing a single pixel is usually sufficient
-        PixelGrabber pg = new PixelGrabber(image, 0, 0, 1, 1, false);
-        try {
-            pg.grabPixels();
-        } catch (InterruptedException e) {
-        }
-
-        // Get the image's color model
-        ColorModel cm = pg.getColorModel();
-        return cm.hasAlpha();
-    }
-
     void saveAndClose(boolean cleanWindow) {
         savePrefs();
         toolbar.removeMouseListener(toolbarMouseListener);
@@ -955,7 +759,8 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
         }
     }
 
-    void buildAstroWindow() {
+    // buildAstroWindow() is only called from the constructor
+    private void buildAstroWindow() {
         mainMenuBar = new MenuBar();
 //                JPopupMenu.setDefaultLightWeightPopupEnabled(false);
 
@@ -2329,9 +2134,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
         bottomPanelB.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
 
 //                SpringUtil.makeCompactGrid (bottomPanelB, 1, bottomPanelB.getComponentCount(), 5,0,5,0);
-        ImageProcessor ip = imp.getProcessor();
-
-        getBiSliderStatistics();
+        getStatistics(true);
         histogram = stats.histogram;
         logHistogram = new double[histogram.length];
 
@@ -2877,7 +2680,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 Prefs.set("Astronomy_Tool.autoConvert", autoConvert);
             } else if (source == useFixedMinMaxValuesCB) {
                 useFixedMinMaxValues = false;
-                getBiSliderStatistics();
+                getStatistics(true);
                 if (imp.getType() == ImagePlus.COLOR_RGB || imp.getType() == ImagePlus.GRAY8) {
                     minValue = cal.getCValue(0);
                     maxValue = cal.getCValue(255);
@@ -3115,6 +2918,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
             if (imp2 != null) {
                 StackProcessor sp = new StackProcessor(imp.getStack(), imp2.getProcessor());
                 ImageStack s2 = imp2.getImageStack();
+                invalidateStatisticsCache();
                 imp.setStack(s2);
                 imp.setFileInfo(imp2.getFileInfo());
                 copyImageProperties(imp2);
@@ -3133,6 +2937,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
             ImagePlus imp2 = FolderOpener.open(null);
             StackProcessor sp = new StackProcessor(imp.getStack(), imp2.getProcessor());
             ImageStack s2 = imp2.getImageStack();
+            invalidateStatisticsCache();
             imp.setStack(s2);
             imp.setFileInfo(imp2.getFileInfo());
             copyImageProperties(imp2);
@@ -3581,6 +3386,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
             if (numSlices > 2) {
                 int n = imp.getCurrentSlice();
                 stack.deleteSlice(n);
+                invalidateStatisticsCache();
                 imp.setStack(null, stack);
                 numSlices--;
                 if (n > numSlices)
@@ -3660,8 +3466,6 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 ImageStack s2 = null;
                 s2 = sp.rotateLeft();
                 imp.setStack(null, s2);
-                if (IJVersion.compareTo("1.42q") > 0 && IJVersion.compareTo("1.44f") < 0)
-                    imp = WindowManager.getImage(impTitle);
                 double pixelWidth = cal.pixelWidth;
                 cal.pixelWidth = cal.pixelHeight;
                 cal.pixelHeight = pixelWidth;
@@ -3692,8 +3496,6 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 ImageStack s2 = null;
                 s2 = sp.rotateRight();
                 imp.setStack(null, s2);
-                if (IJVersion.compareTo("1.42q") > 0 && IJVersion.compareTo("1.44f") < 0)
-                    imp = WindowManager.getImage(impTitle);
                 double pixelWidth = cal.pixelWidth;
                 cal.pixelWidth = cal.pixelHeight;
                 cal.pixelHeight = pixelWidth;
@@ -3701,23 +3503,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 if (imp.getStackSize() > 1)
                     stackRotated = true;
                 ac.repaint();
-//                            refreshAstroWindow();
             } else {
-
-//                            ImagePlus impr = NewImage.createFloatImage("temp", ipHeight, ipWidth, stackSize, 0);
-//                            ImageProcessor ipr = impr.getProcessor();
-//                            for(int i = 1; i <= stackSize; i++)
-//                                    {
-//                                    imp.setSlice(i);
-//                                    impr.setSlice(i);
-//                                    ipr = imp.getProcessor().rotateRight();
-//                                    impr.setProcessor(null, ipr);
-//                                    }
-//                            ipr = impr.getProcessor();
-//                            imp.flush();
-//                            imp.setProcessor(null, ipr);
-//                            ip = imp.getProcessor();
-//                            imp.setWindow(iw);
                 for (int i = 1; i <= stackSize; i++) {
                     imp.setSlice(i);
                     ip = imp.getProcessor().rotateLeft();
@@ -3728,9 +3514,6 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 cal.pixelHeight = pixelWidth;
                 imp.setCalibration(cal);
                 imp.setSlice(currentSlice);
-//                            Graphics g = ac.getGraphics();
-//                            g.clearRect(0, 0, ac.getWidth(), ac.getHeight());
-//                            ac.update(g);
                 ac.repaint();
             }
         }
@@ -4043,8 +3826,8 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
         Prefs.set("Astronomy_Tool.autoScaleFactorHighRGB", autoScaleFactorHighRGB);
     }
 
-    void grabAutoScaleParameters() {
-        getStatistics();
+    private void grabAutoScaleParameters() {
+        getStatistics(false);
         if (imp.getType() != ImagePlus.COLOR_RGB) {
             autoScaleFactorLow = (stats.mean - min) / stats.stdDev;
             autoScaleFactorHigh = (max - stats.mean) / stats.stdDev;
@@ -4194,8 +3977,6 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 s2 = sp.rotateRight();
             }
             imp.setStack(null, s2);
-            if (IJVersion.compareTo("1.42q") > 0 && IJVersion.compareTo("1.44f") < 0)
-                imp = WindowManager.getImage(impTitle);
             double pixelWidth = cal.pixelWidth;
             cal.pixelWidth = cal.pixelHeight;
             cal.pixelHeight = pixelWidth;
@@ -4718,6 +4499,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                         (imp.getStackSize() != 1 && imp2.getStackSize() != 1))) {
                     StackProcessor sp = new StackProcessor(imp.getStack(), imp2.getProcessor());
                     ImageStack s2 = imp2.getImageStack();
+                    invalidateStatisticsCache();
                     imp.setStack(s2);
                     imp.setFileInfo(imp2.getFileInfo());
                     copyImageProperties(imp2);
@@ -4932,27 +4714,36 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
 //            lengthTextField.setText(fourPlaces.format(photom.sourceBrightness()));
     }
 
-    protected void getStatistics() {
-        Roi roi = imp.getRoi();
-        imp.killRoi();
-        if (imp.getType() == ImagePlus.COLOR_RGB) {
-            ImageProcessor ip = imp.getProcessor();
-            ip.reset();
-        }
-        stats = imp.getStatistics(ImageStatistics.MEAN + ImageStatistics.MIN_MAX + ImageStatistics.STD_DEV, BISLIDER_SEGMENTS);
-        imp.setRoi(roi);
+    // With few exceptions, this is called before every imp.setProcessor(), imp.setStack(), and imp.setSlice().
+    // However it should be unnecessary for rotations and flips.
+    private void invalidateStatisticsCache() {
+        lastHistMin = HISTOGRAM_INVALID;
+        lastHistMax = HISTOGRAM_INVALID;
+        stats = null;
     }
 
-    protected void getBiSliderStatistics() {
+    private void getStatisticsCached(double histMin, double histMax) {
+        if (stats == null || histMin != lastHistMin || histMax != lastHistMax) {
+            lastHistMin = histMin;
+            lastHistMax = histMax;
+            int mOptions = ImageStatistics.MEAN + ImageStatistics.MIN_MAX + ImageStatistics.STD_DEV;
+            int nBins = BISLIDER_SEGMENTS;
+            stats = imp.getStatistics(mOptions, nBins, histMin, histMax);
+        }
+    }
+
+    private void getStatistics(boolean forBiSlider) {
         Roi roi = imp.getRoi();
         imp.killRoi();
         if (imp.getType() == ImagePlus.COLOR_RGB) {
             ImageProcessor ip = imp.getProcessor();
             ip.reset();
         }
-        stats = imp.getStatistics((ImageStatistics.MEAN + ImageStatistics.MIN_MAX +
-                        ImageStatistics.STD_DEV), BISLIDER_SEGMENTS,
-                minValue, maxValue);
+        if (forBiSlider) {
+            getStatisticsCached(minValue, maxValue);
+        } else {
+            getStatisticsCached(0.0, 0.0);
+        }
         imp.setRoi(roi);
     }
 
@@ -4984,7 +4775,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
         ac.setShowPixelScale(showScaleX, showScaleY, pixelScaleX, pixelScaleY);
         saveWCStoPrefsMenuItem.setEnabled(wcs != null && (wcs.hasPA || wcs.hasScale));
 
-        getStatistics();
+        getStatistics(false);
 
         if (imp.getType() == ImagePlus.COLOR_256 || imp.getType() == ImagePlus.COLOR_RGB || imp.getType() == ImagePlus.GRAY8) {
             useFixedMinMaxValues = false;
@@ -5067,7 +4858,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
     void updatePanelValues() {
         if (updatesEnabled) {
             ImageProcessor ip = imp.getProcessor();
-            getBiSliderStatistics();
+            getStatistics(true);
 
             if (startupPrevLevelsPerSlice) {
                 if (!autoScaleIconClicked) {
