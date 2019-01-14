@@ -6,11 +6,16 @@
 # Maven build dir
 target
 
+# Finder turds
+**/.DS_Store
+
 # Emacs turds
 **/*.*~
 
-# IntelliJ Idea
+# IntelliJ IDEA files that shouldn't be shared
+## Regenerated from pom.xml
 Astronomy_.iml
+## Very specific to each developer
 .idea/workspace.xml
 
 # Shade plugin product
