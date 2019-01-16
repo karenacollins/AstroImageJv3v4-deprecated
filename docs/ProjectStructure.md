@@ -41,11 +41,11 @@ bislider, flanagan, and GacsConnection artifacts (none of which are in Maven Cen
 * [`submodules/michaeltflanagan-flanagan`](https://github.com/observatree/michaeltflanagan-flanagan)
 * [`submodules/esdc-tapclient`](https://github.com/observatree/esdc-tapclient)
 
-A final git submodule contains a rudimentary system test plan and resources for executing it:
+A final git submodule contains the beginnings of a system test plan and resources for executing it:
 
 * [`submodules/aij-testing`](https://github.com/observatree/aij-testing)
 
-While we are on the subject of testing, it should be noted that there are no unit tests in most of the codebases,
+While we are on the subject of testing, it should be noted that there are no unit tests in any of the codebases,
 and this represents a large amount of technical debt.
 
 Repository History

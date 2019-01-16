@@ -86,3 +86,5 @@ BrowserLauncher2-1.3.jar
 
 The former group of three we must do Maven builds for locally because they are not present in Maven Central. The latter group of two is present in Maven Central. All five jars for third-party dependencies must be bundled into Astronomy_.jar using the Maven Shade plug-in. This is because the plugin class loader is not prepared to search for 
 any jars other than the the plug-in jars themselves. Those are distinguished by having an underscore in their names.
+
+Return to [top-level README](../README.md).

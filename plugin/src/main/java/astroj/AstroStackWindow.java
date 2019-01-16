@@ -444,11 +444,9 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
 //                System.setProperty("com.apple.laf.useScreenMenuBar", "false");
 
         if (IJ.isWindows()) {
-//                        try {UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");}
             try {
-                UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+                UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
             }
-//                        try {UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());}
             catch (Exception e) {
             }
         } else if (IJ.isLinux()) {
