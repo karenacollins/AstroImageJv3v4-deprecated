@@ -1,0 +1,22 @@
+# Common IDE
+.classpath
+.project
+.settings
+
+# Maven build dir
+target
+
+# Finder turds
+**/.DS_Store
+
+# Emacs turds
+**/*.*~
+
+# IntelliJ IDEA files that shouldn't be shared
+## Regenerated from pom.xml
+Astronomy_.iml
+## Very specific to each developer
+.idea/workspace.xml
+
+# Shade plugin product
+dependency-reduced-pom.xml

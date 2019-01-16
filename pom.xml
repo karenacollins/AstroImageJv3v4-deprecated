@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <artifactId>AstroImageJ</artifactId>
+  <packaging>pom</packaging>
+  <name>AstroImageJ Project Aggregator</name>
+
+  <modules>
+    <module>plugin</module>
+    <module>submodules/imagej-ImageJA</module>
+    <module>submodules/fredericdevernier-bislider</module>
+    <module>submodules/michaeltflanagan-flanagan</module>
+    <module>submodules/esdc-tapclient</module>
+  </modules>
+
+  <groupId>edu.louisville.astro.software</groupId>
+  <version>4.0-SNAPSHOT</version>
+  <modelVersion>4.0.0</modelVersion>
+
+</project>

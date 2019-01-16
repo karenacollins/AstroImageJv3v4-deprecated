@@ -1,0 +1,15 @@
+[submodule "submodules/aij-testing"]
+	path = submodules/aij-testing
+	url = https://github.com/observatree/aij-testing
+[submodule "submodules/imagej-ImageJA"]
+	path = submodules/imagej-ImageJA
+	url = https://github.com/observatree/imagej-ImageJA
+[submodule "submodules/fredericdevernier-bislider"]
+	path = submodules/fredericdevernier-bislider
+	url = https://github.com/observatree/fredericdevernier-bislider.git
+[submodule "submodules/michaeltflanagan-flanagan"]
+	path = submodules/michaeltflanagan-flanagan
+	url = https://github.com/observatree/michaeltflanagan-flanagan.git
+[submodule "submodules/esdc-tapclient"]
+	path = submodules/esdc-tapclient
+	url = https://github.com/observatree/esdc-tapclient.git
