@@ -243,6 +243,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
             boolean unzoomWhenMinimize = false;
             boolean invertX = false;
             boolean invertY = false;
+            boolean autoNupEleft = true;
             boolean nameOverlay = true;
             boolean valueOverlay = true;
             boolean showMeanNotPeak = false;
@@ -419,7 +420,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                              showMeasureMultiLinesCB, negateMeasureDelMagCB, writeMeasureLengthLogCB, writeMeasureLengthTableDegCB, writeMeasureLengthTableMinCB, writeMeasureLengthTableSecCB,
                              writeMeasurePACB, writeMeasureDelMagCB, writeMeasureFluxRatioCB, writePhotometricDataTableCB;
             CheckboxMenuItem startupAutoLevelRB, usePreviousLevelsRB, usePreviousLevelsPerSliceRB, useFullRangeRB, negativeDisplayRB;
-            CheckboxMenuItem invertNoneRB, invertXRB, invertYRB, invertXYRB;
+            CheckboxMenuItem autoNupEleftRB, invertNoneRB, invertXRB, invertYRB, invertXYRB;
             CheckboxMenuItem rotate0RB, rotate90RB, rotate180RB, rotate270RB, useSIPAllProjectionsCB;
             CheckboxMenuItem showZoomCB, showDirCB, showXYCB, showScaleXCB, showScaleYCB, useFixedMinMaxValuesCB;
             CheckboxMenuItem showAbsMagCB, showIntCntWithAbsMagCB, autoSaveWCStoPrefsCB, autoGrabBandCFromHistogramCB;
@@ -581,7 +582,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 wcs.setUseSIPAlways(useSIPAllProjections);
                 extraInfo = " ("+wcs.coordsys+")";
                 ac.setWCS(wcs); 
-                
+                if (autoNupEleft) setBestOrientation();
                 ac.setOrientation(invertX, invertY, rotation);
                 ac.setShowPixelScale(showScaleX, showScaleY, pixelScaleX, pixelScaleY);
                 netFlipX = ac.getNetFlipX();
@@ -1110,7 +1111,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 
 //------SCALE menu---------------------------------------------------------------------                
                 
-                scaleMenu = new Menu ("Scale");
+                scaleMenu = new Menu ("Contrast");
 
                 scaleMenu.add("--When an image is opened or modified use:--");
 
@@ -1136,7 +1137,9 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 useFixedMinMaxValuesCB.addItemListener(this);
                 scaleMenu.add(useFixedMinMaxValuesCB);
                 
-                autoGrabBandCFromHistogramCB = new CheckboxMenuItem("Auto-grab auto brightness and contrast from histogram", autoGrabBandCFromHistogram);
+                scaleMenu.addSeparator();
+                
+                autoGrabBandCFromHistogramCB = new CheckboxMenuItem("Update auto-contrast thresholds when histogram range is changed", autoGrabBandCFromHistogram);
                 autoGrabBandCFromHistogramCB.addItemListener(this);
                 scaleMenu.add(autoGrabBandCFromHistogramCB);
                 
@@ -1165,6 +1168,12 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 viewMenu.add(clearOverlayMenuItem);
 
                 viewMenu.addSeparator();
+                
+                autoNupEleftRB = new CheckboxMenuItem("Auto WCS North Up, East Left", autoNupEleft);
+                autoNupEleftRB.addItemListener(this);
+                viewMenu.add(autoNupEleftRB);
+                
+                viewMenu.addSeparator();
 
                 invertNoneRB = new CheckboxMenuItem("Invert None", !invertX && !invertY);
                 invertNoneRB.addItemListener(this);
@@ -1189,7 +1198,7 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
 //                invertGroup.add(invertXYRB);
 
                 viewMenu.addSeparator();
-
+                
                 rotate0RB = new CheckboxMenuItem("0 degrees", rotation == AstroCanvas.ROT_0);
                 rotate0RB.addItemListener(this);
                 viewMenu.add(rotate0RB);
@@ -2890,7 +2899,13 @@ protected ImageIcon createImageIcon(String path, String description) {
                 ac.setShowIntCntWithAbsMag(showIntCntWithAbsMag);
                 ac.paint(ac.getGraphics());
                 Prefs.set("Astronomy_Tool.showIntCntWithAbsMag",showIntCntWithAbsMag);
-                }            
+                }  
+            else if(source == autoNupEleftRB)
+                {
+                autoNupEleft = true;
+                Prefs.set("Astronomy_Tool.autoNupEleft",autoNupEleft);
+                setBestOrientation();
+                }
             else if(source == invertNoneRB)
                 {
 				invertX = false;
@@ -3255,7 +3270,12 @@ protected ImageIcon createImageIcon(String path, String description) {
                 ac.setShowIntCntWithAbsMag(showIntCntWithAbsMag);
                 ac.paint(ac.getGraphics());
                 Prefs.set("Astronomy_Tool.showIntCntWithAbsMag",showIntCntWithAbsMag);
-                }            
+                }
+            else if(source == autoNupEleftRB)
+                {
+                autoNupEleft = false;
+                Prefs.set("Astronomy_Tool.autoNupEleft",autoNupEleft);
+                }
             else if(source == invertNoneRB)
                 {
                 invertNoneRB.setState(true);
@@ -3324,7 +3344,7 @@ protected ImageIcon createImageIcon(String path, String description) {
             }
         }
 
-         void setOrientation() {
+        void setOrientation() {
             ac.setOrientation(invertX, invertY, rotation);
             ac.updateZoomBoxParameters();
             netFlipX = ac.getNetFlipX();
@@ -3334,6 +3354,97 @@ protected ImageIcon createImageIcon(String path, String description) {
             Prefs.set("Astronomy_Tool.invertX", invertX);
             Prefs.set("Astronomy_Tool.invertY", invertY);
             Prefs.set("Astronomy_Tool.rotation", rotation);            
+            }
+         
+        void setBestOrientation() {
+            //boolean usewcs = Prefs.get ("multiaperture.usewcs", false);
+            //IJ.log("Running Best Orientation");
+            if (autoNupEleft)
+                {
+                if (wcs != null && wcs.hasWCS())  //usewcs &&
+                    {
+                    double npa = (360+wcs.getNorthPA())%360;
+                    double epa = (360+wcs.getEastPA())%360;
+                    invertY = (npa > 90 && npa < 270) ? true : false; 
+                    invertX = (epa < 0 || epa > 180) ? true : false;
+                    if (invertXYRB != null && invertY && invertX )
+                        {
+                        invertXYRB.setState(true);
+                        invertXRB.setState(false); 
+                        invertYRB.setState(false);
+                        invertNoneRB.setState(false);
+                        }
+                    else if (invertXYRB != null && !invertY && !invertX )
+                        {
+                        invertXYRB.setState(false);
+                        invertXRB.setState(false); 
+                        invertYRB.setState(false);
+                        invertNoneRB.setState(true);
+                        }
+                    else if (invertXYRB != null && invertY)
+                        {
+                        invertXYRB.setState(false);
+                        invertXRB.setState(false); 
+                        invertYRB.setState(true);
+                        invertNoneRB.setState(false);
+                        }
+                    else if (invertXYRB != null && invertX)
+                        {
+                        invertXYRB.setState(false);
+                        invertXRB.setState(true); 
+                        invertYRB.setState(false);
+                        invertNoneRB.setState(false);
+                        }                
+                    rotation = AstroCanvas.ROT_0;
+                    if (rotate0RB != null)
+                        {
+                        rotate0RB.setState(true);
+                        rotate90RB.setState(false);
+                        rotate180RB.setState(false);
+                        rotate270RB.setState(false);
+                        }
+                    ac.setOrientation(invertX, invertY, rotation);
+                    ac.updateZoomBoxParameters();
+                    netFlipX = ac.getNetFlipX();
+                    netFlipY = ac.getNetFlipY();
+                    netRotate = ac.getNetRotate();
+                    ac.paint(ac.getGraphics());
+                    Prefs.set("Astronomy_Tool.invertX", invertX);
+                    Prefs.set("Astronomy_Tool.invertY", invertY);
+                    Prefs.set("Astronomy_Tool.rotation", rotation);
+                    }
+                else
+                    {
+                    String fileName = IJU.getSliceFilename(imp);
+                    if (fileName.endsWith(".png") || fileName.endsWith(".jpg"))
+                        {
+                        invertX = false;
+                        invertY = false;
+                        rotation = AstroCanvas.ROT_0;
+                        showZoom = false;
+                        showDir = false;
+                        showXY = false;
+                        showScaleX = false;
+                        showScaleY = false;
+                        if (invertXYRB != null)
+                            {
+                            invertXYRB.setState(false);
+                            invertXRB.setState(false); 
+                            invertYRB.setState(false);
+                            invertNoneRB.setState(true);
+                            rotate0RB.setState(true);
+                            rotate90RB.setState(false);
+                            rotate180RB.setState(false);
+                            rotate270RB.setState(false);
+                            showZoomCB.setState(false);
+                            showDirCB.setState(false);
+                            showXYCB.setState(false);
+                            showScaleXCB.setState(false);
+                            showScaleYCB.setState(false);
+                            }
+                        }
+                    }
+                } 
             }
 
 
@@ -3348,12 +3459,14 @@ protected ImageIcon createImageIcon(String path, String description) {
                     ImagePlus imp2 = IJ.openImage();
                     if (imp2 != null)
                         {
+                        cal=imp2.getCalibration();
                         StackProcessor sp = new StackProcessor(imp.getStack(), imp2.getProcessor());
                         ImageStack s2 = imp2.getImageStack();
                         imp.setStack(s2);
                         imp.setFileInfo(imp2.getFileInfo());
                         copyImageProperties(imp2);
                         imp.setProcessor(imp2.getTitle(), imp2.getProcessor());
+                        imp.setCalibration(cal);
                         setAstroProcessor(false);
                         }
                     }
@@ -3793,6 +3906,7 @@ protected ImageIcon createImageIcon(String path, String description) {
                     {
                     if (imp.getType()==ImagePlus.COLOR_RGB) imp.getProcessor().reset();
                     IJ.doCommand("Make Composite");
+                    saveAndClose(false);
                     }                              
                 else if(b == stackToRGBMenuItem)
                     {
@@ -5721,7 +5835,7 @@ void setupListeners() {
             if (autoSaveWCStoPrefs) updatePrefsFromWCS(false);
             ac.setShowPixelScale(showScaleX, showScaleY, pixelScaleX, pixelScaleY);
             saveWCStoPrefsMenuItem.setEnabled(wcs != null && (wcs.hasPA || wcs.hasScale));
-            
+            if (autoNupEleft) setBestOrientation();
             getStatistics();
 
             if (imp.getType() == ImagePlus.COLOR_256 || imp.getType() == ImagePlus.COLOR_RGB || imp.getType() == ImagePlus.GRAY8)
@@ -5793,6 +5907,8 @@ void setupListeners() {
             rBack1 = Prefs.get("aperture.rback1", rBack1);
             rBack2 = Prefs.get("aperture.rback2", rBack2);
             photom = new Photometer (cal);
+            //photom1 = new Photometer (cal);
+            //photom2 = new Photometer (cal);
             photom.setRemoveBackStars(removeBackStars);
             ac.setAperture(radius,rBack1,rBack2,showSkyOverlay,showPhotometer);
 //            setValueTextField();
@@ -7505,7 +7621,7 @@ void setupListeners() {
 
 	public void zoomIn(int screenX, int screenY, boolean mouseClick, boolean center, double factor) {
         magnification = ac.getMagnification();
-        if (magnification >= 32) return;
+        if (magnification >= 128) return;
         double newMag = magnification;
         if (mouseClick)
             {
@@ -7516,7 +7632,7 @@ void setupListeners() {
             }
         else
             newMag = magnification*1.1;
-        if (newMag >= 32) newMag = 32;
+        if (newMag >= 128) newMag = 128;
         adjustSourceRect(newMag, screenX, screenY, center);
 	}
 
@@ -8588,6 +8704,7 @@ double[] processCoordinatePair(JTextField textFieldA, int decimalPlacesA, int ba
         showRemovedPixels = Prefs.get("aperture.showremovedpixels", showRemovedPixels);
         useInvertingLut = Prefs.get("Astronomy_Tool.useInvertingLut", useInvertingLut);
         ac.showAnnotations = Prefs.get("Astronomy_Tool.showAnnotations", ac.showAnnotations);
+        autoNupEleft = Prefs.get("Astronomy_Tool.autoNupEleft",autoNupEleft);
         invertX = Prefs.get("Astronomy_Tool.invertX", invertX);
         invertY = Prefs.get("Astronomy_Tool.invertY", invertY);
         rotation = (int)Prefs.get("Astronomy_Tool.rotation", rotation);
@@ -8699,14 +8816,19 @@ double[] processCoordinatePair(JTextField textFieldA, int decimalPlacesA, int ba
         Prefs.set("aperture.showremovedpixels", showRemovedPixels);
         Prefs.set("Astronomy_Tool.useInvertingLut", useInvertingLut);
         Prefs.set("Astronomy_Tool.showAnnotations", ac.showAnnotations);
-        Prefs.set("Astronomy_Tool.invertX", invertX);
-        Prefs.set("Astronomy_Tool.invertY", invertY);
-        Prefs.set("Astronomy_Tool.rotation", rotation);
-        Prefs.set("Astronomy_Tool.showZoom", showZoom);
-        Prefs.set("Astronomy_Tool.showDir", showDir);
-        Prefs.set("Astronomy_Tool.showXY", showXY);
-        Prefs.set("Astronomy_Tool.showScaleX", showScaleX);
-        Prefs.set("Astronomy_Tool.showScaleY", showScaleY);
+        Prefs.set("Astronomy_Tool.autoNupEleft",autoNupEleft);
+        String fileName = IJU.getSliceFilename(imp);
+        if (!autoNupEleft || (autoNupEleft && !(fileName.endsWith(".png") || fileName.endsWith(".jpg"))))
+            {
+            Prefs.set("Astronomy_Tool.invertX", invertX);
+            Prefs.set("Astronomy_Tool.invertY", invertY);
+            Prefs.set("Astronomy_Tool.rotation", rotation);
+            Prefs.set("Astronomy_Tool.showZoom", showZoom);
+            Prefs.set("Astronomy_Tool.showDir", showDir);
+            Prefs.set("Astronomy_Tool.showXY", showXY);
+            Prefs.set("Astronomy_Tool.showScaleX", showScaleX);
+            Prefs.set("Astronomy_Tool.showScaleY", showScaleY);
+            }
         Prefs.set("Astronomy_Tool.showAbsMag", showAbsMag);
         Prefs.set("Astronomy_Tool.showIntCntWithAbsMag", showIntCntWithAbsMag);        
         Prefs.set("aperture.skyoverlay", showSkyOverlay);

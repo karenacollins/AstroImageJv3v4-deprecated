@@ -66,6 +66,7 @@ public class WCS
     double xScale = 1.0;
     double yScale = 1.0;
     double epoch = 2000.0;
+    double FFIScale = 1.0;
 	String[] CTYPE;
 	String[] CUNIT;
 	double LONPOLE;
@@ -366,6 +367,19 @@ public class WCS
                 }
             }
         
+//        icard = FitsJ.findCardWithKey ("FFIINDEX", hdr);
+//        if (icard > 0)
+//            {
+//            FFIScale=0.35;
+//            }
+//        
+//        icard = FitsJ.findCardWithKey ("WCS_MSEP", hdr);
+//        if (icard > 0)
+//            {
+//            String comment = FitsJ.getCardComment (hdr[icard]);
+//            if (comment.contains("FFI")) FFIScale=0.35;
+//            }
+//        
 		try	{
             boolean hasOldPC = false;
             double[][] oldPC = PC.clone();
@@ -687,6 +701,8 @@ public class WCS
                         CD[j][i] = CDELT[j]*PC[j][i];
                         }
                     }
+                CDELT[0] = Math.sqrt(CD[0][0]*CD[0][0] + CD[1][0]*CD[1][0]);
+                CDELT[1] = Math.sqrt(CD[0][1]*CD[0][1] + CD[1][1]*CD[1][1]);
                 }
             else if (!hasCD && !hasPC)
                 {
@@ -1588,22 +1604,22 @@ public class WCS
     
     public double getXScale()
 		{
-        return xScale;
+        return xScale*FFIScale;
 		}    
 
     public double getYScale()
 		{
-        return yScale;
+        return yScale*FFIScale;
 		}
    
     public double getXScaleArcSec()
 		{
-        return xScale*3600.0;
+        return xScale*3600.0*FFIScale;
         }
     
     public double getYScaleArcSec()
 		{
-        return yScale*3600.0;
+        return yScale*3600.0*FFIScale;
         }
 
     

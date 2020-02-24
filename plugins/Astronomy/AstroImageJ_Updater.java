@@ -299,7 +299,7 @@ public class AstroImageJ_Updater implements PlugIn {
 
 	int showDialog(String[] versions) {
 		GenericDialog gd = new GenericDialog("AstroImageJ Updater");
-		gd.addChoice("Upgrade To:", versions, versions[(versions.length > 0 ? 1 : 0)]);
+		gd.addChoice("Upgrade To:", versions, versions[(versions.length > 0 ? 0 : 0)]);
 		String msg = 
 			"You are currently running AstroImageJ "+IJ.getAstroVersion()+".\n"+
 			" \n"+

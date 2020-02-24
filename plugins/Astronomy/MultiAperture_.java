@@ -958,15 +958,38 @@ public class MultiAperture_ extends Aperture_ implements MouseListener, MouseMot
         closeHelpPanel();
 		super.shutDown();
         if (asw != null && asw.autoDisplayAnnotationsFromHeader) asw.displayAnnotationsFromHeader(true, true, false);
-        cancelled = true;
-        processingStack = false;
-        processingImage = false;
+
         if (stackTask != null) stackTask = null;
         if (stackTaskTimer != null) stackTaskTimer = null;
         if (doubleClickTask != null) doubleClickTask = null;
         if (doubleClickTaskTimer != null) doubleClickTaskTimer = null;
         if ((table != null) && !Data_Processor.active && !isInstanceOfStackAlign) table.show();  // && Data_Processor.runMultiPlot)
         if (table != null) table.setLock(false);
+        if (processingStack && table != null && !isInstanceOfStackAlign && !updatePlot && !Data_Processor.active)  
+            {
+            if (MultiPlot_.mainFrame!=null)
+                {
+                if (MultiPlot_.getTable()!=null && MultiPlot_.getTable().equals(table))
+                    {
+                    MultiPlot_.updatePlot(MultiPlot_.updateAllFits());
+                    }
+                else
+                    {
+                    MultiPlot_.setTable(table, false);
+                    }
+                }
+            else
+                {
+                IJ.runPlugIn("MultiPlot_",tableName);
+                if (MultiPlot_.mainFrame!=null && MultiPlot_.getTable()!=null)
+                    {
+                    MultiPlot_.setTable(table, false);
+                     }
+                }
+            }
+        cancelled = true;
+        processingStack = false;
+        processingImage = false;
         Prefs.set (MultiAperture_.PREFS_NAPERTURESMAX, nAperturesMax);
         Prefs.set (MultiAperture_.PREFS_PREVIOUS, previous);
         Prefs.set ("plot2.openSimbadForAbsMag", openSimbadForAbsMag);
@@ -1979,7 +2002,7 @@ public class MultiAperture_ extends Aperture_ implements MouseListener, MouseMot
             ac.setMousePosition(startDragScreenX, startDragScreenY);
             startDragX = ac.offScreenXD(startDragScreenX);
             startDragY = ac.offScreenYD(startDragScreenY);
-            selectedApertureRoi = ocanvas.findApertureRoi(startDragX, startDragY, 4);
+            selectedApertureRoi = ocanvas.findApertureRoi(startDragX, startDragY, 0);
             if (selectedApertureRoi != null && !aperturesInitialized) 
                 asw.setMovingAperture(true);
             else
@@ -3015,7 +3038,7 @@ public class MultiAperture_ extends Aperture_ implements MouseListener, MouseMot
                 }
 
         tablePanel = MeasurementTable.getTextPanel(tableName);
-        if (table != null && tablePanel != null && table.getCounter() > 0) return true;  //!autoMode && ()
+        if (table != null && tablePanel != null && (table.getCounter() > 0 || !updatePlot)) return true;  //!autoMode && ()
         
 	    table = MeasurementTable.getTable (tableName);
 

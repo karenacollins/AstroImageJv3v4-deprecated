@@ -1780,7 +1780,7 @@ public class FitsJ
 				tstart = getCardDoubleValue (cards[icard]);
 				if (! Double.isNaN(tstart))
                     tcomment = getCardComment(cards[icard]);
-                    if (tcomment.contains("[d]")) tstart = tstart*24.0*3600.0; 
+                    if (tcomment != null && tcomment.contains("[d]")) tstart = tstart*24.0*3600.0; 
 					return tstart;
 				}
 
@@ -1792,7 +1792,7 @@ public class FitsJ
 				tstart = getCardDoubleValue (cards[icard]);
 				if (! Double.isNaN(tstart))
                     tcomment = getCardComment(cards[icard]);
-                    if (tcomment.contains("[d]")) tstart = tstart*24.0*3600.0; 
+                    if (tcomment != null && tcomment.contains("[d]")) tstart = tstart*24.0*3600.0; 
 					return tstart;
 				}
             
@@ -1923,11 +1923,63 @@ public class FitsJ
     
     public static double getMeanTESSBJD (String[] cards)
         {
-        double tstart = findDoubleValue ("TSTART", cards);
-        double tstop = findDoubleValue ("TSTOP", cards);
-        int bjdrefi = findIntValue ("BJDREFI", cards);
-        double bjdreff = findDoubleValue ("BJDREFF", cards);
-        return tstart + ((tstop-tstart)/2.0) + bjdrefi + bjdreff;
+        double tstart=0, tstop=0, bjdreff=0, bjdtdb=0;
+        int bjdrefi=0, icard=0;
+        boolean checkBJDTDB=false;
+        String value = "";
+        
+        icard = findCardWithKey ("TSTART", cards);
+		if (icard > 0)
+            {
+            tstart = findDoubleValue ("TSTART", cards);
+            }
+        else
+            {
+            checkBJDTDB=true;
+            }
+        
+        icard = findCardWithKey ("TSTOP", cards);
+		if (icard > 0)
+            {
+            tstop = findDoubleValue ("TSTOP", cards);
+            }
+        else
+            {
+            checkBJDTDB=true;
+            } 
+        
+        icard = findCardWithKey ("BJDREFI", cards);
+		if (icard > 0)
+            {
+            bjdrefi = findIntValue ("BJDREFI", cards);
+            }
+        else
+            {
+            checkBJDTDB=true;
+            }
+        
+        icard = findCardWithKey ("BJDREFF", cards);
+		if (icard > 0)
+            {
+            bjdreff = findDoubleValue ("BJDREFF", cards);
+            }
+        else
+            {
+            checkBJDTDB=true;
+            } 
+        
+        if (!checkBJDTDB)
+            {
+            return tstart + ((tstop-tstart)/2.0) + bjdrefi + bjdreff;
+            }
+
+        icard = findCardWithKey ("BJD_TDB", cards);
+		if (icard > 0)
+            {
+            bjdtdb = findDoubleValue ("BJD_TDB", cards);
+            return bjdtdb;
+            }
+        return Double.NaN;
         }
     
 

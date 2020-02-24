@@ -126,11 +126,14 @@ public class Data_Processor implements PlugIn, ActionListener, ChangeListener, /
     int dialogFrameLocationY = 20;
     long minFileNumber = 0, maxFileNumber = 1000000000;
     int outlierRadius = 2, outlierThreshold = 50;
+    int fileSizeChangeWaitTime = 500;
 
     Class<?> imageWindowClass;
 	boolean running = false;
+    boolean autoRunAndClose = false;
     static public boolean active = false;  //used by MultiAperture to determine if runMultiPlot is valid
 	protected boolean ignoreAction = false;
+    
     long flen, newflen;
 
 
@@ -141,8 +144,10 @@ public class Data_Processor implements PlugIn, ActionListener, ChangeListener, /
     JMenu fileMenu, prefsMenu, viewMenu;
     JMenuItem exitMenuItem;
     JCheckBoxMenuItem useBeepCB, useShowLogCB, showLogDateTimeCB, showScienceCB, showRawCalsCB, showMasterImagesCB;
+    JCheckBoxMenuItem autoRunAndCloseCB;
     JCheckBoxMenuItem onlyNewCB, usepreMacro1AutoLevelCB, showToolTipsCB, autoWildcardCB;
     JCheckBoxMenuItem rawCalCommonDirCB, masterCalCommonDirCB, postMacro1AutoLevelCB, postMacro2AutoLevelCB;
+    JMenuItem setFileSizeChangeWaitTimeMenuItem;
 
 	JTextField dirText, filenamePatternText;
 	JLabel remainingNumLabel, processedNumLabel, pollingIntervalLabel, minFileNumberLabel, maxFileNumberLabel;
@@ -1084,7 +1089,22 @@ public class Data_Processor implements PlugIn, ActionListener, ChangeListener, /
         useBeepCB = new JCheckBoxMenuItem("Beep after processing each science image", useBeep);
         useBeepCB.addItemListener(this);
         prefsMenu.add(useBeepCB);
-
+        
+        prefsMenu.addSeparator();
+        
+        setFileSizeChangeWaitTimeMenuItem = new JMenuItem("Set time to wait for new file writes to complete...");
+                setFileSizeChangeWaitTimeMenuItem.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                            setfileSizeChangeWaitTime();
+                            }});
+                prefsMenu.add(setFileSizeChangeWaitTimeMenuItem);
+                
+        prefsMenu.addSeparator();
+        
+        autoRunAndCloseCB = new JCheckBoxMenuItem("Automatically run and close DP. Keep disabled. For macro processing only.", autoRunAndClose);
+        autoRunAndCloseCB.addItemListener(this);
+        prefsMenu.add(autoRunAndCloseCB);
+        
         menuBar.add(prefsMenu);
 
         
@@ -2811,6 +2831,22 @@ public class Data_Processor implements PlugIn, ActionListener, ChangeListener, /
         if (calcHeaders) acc.showPanel(true);
         
         countValidFiles();
+        
+        if (autoRunAndClose)
+            {
+            if (timer != null) timer.cancel();
+            if (task != null) task.cancel();
+            if (onlyNew && !startButton.getText().equals("CONTINUE")) firstRun=true;
+            startButton.setText("RUNNING");
+            startButton.setForeground(Color.red);
+            startButton.repaint();
+            length = 0;
+            running = true;
+            astrometryCanceledByUser = false;
+            active = true;
+            requestStop = false;
+            startTimer();
+            }
 		}
     
 
@@ -2966,6 +3002,11 @@ public class Data_Processor implements PlugIn, ActionListener, ChangeListener, /
             }
         else if (source == useBeepCB)
             useBeep = selectedState;
+        else if (source == autoRunAndCloseCB)
+            {
+            autoRunAndClose = selectedState;
+            Prefs.set ("dataproc.autoRunAndClose",autoRunAndClose);
+            }
         else if (source == useScienceProcessingBox)
             useScienceProcessing = selectedState;
         else if (source == sortNumericallyBox)
@@ -5645,7 +5686,7 @@ protected ImageIcon createImageIcon(String path, String description) {
         if (saveProcessedData && (saveSuffix.trim().length()!=0 || saveDir.trim().length() != 0))
             {
             int dotIndex = s.lastIndexOf(".");
-            if (s.endsWith(".gz") || s.endsWith(".zip"))
+            if (s.endsWith(".gz") || s.endsWith(".fz") || s.endsWith(".zip"))
                 {
                 s = s.substring(0, dotIndex);
                 dotIndex = s.lastIndexOf(".");
@@ -5706,7 +5747,7 @@ protected ImageIcon createImageIcon(String path, String description) {
     boolean saveProcessedFile(ImagePlus impLocal, String dirPath, String filePath, String name, String format)
         {
         boolean localCompress = compress;
-        if (filePath.endsWith(".gz") || filePath.endsWith(".zip"))
+        if (filePath.endsWith(".gz") || filePath.endsWith(".fz") || filePath.endsWith(".zip"))
             {
             int dotIndex = filePath.lastIndexOf(".");
             filePath = filePath.substring(0, dotIndex);
@@ -6122,7 +6163,7 @@ protected ImageIcon createImageIcon(String path, String description) {
                                             File file = new File(mainDir+slash+s);
 
                                             flen = file.length();
-                                            IJ.wait(500);
+                                            IJ.wait(fileSizeChangeWaitTime);
                                             newflen = file.length();
                                         if (newflen != flen)
                                             {
@@ -6525,6 +6566,10 @@ protected ImageIcon createImageIcon(String path, String description) {
                     firstRun = false;
                     unlock();
                 }
+            if (autoRunAndClose)
+                {
+                saveAndClose();
+                }
             if (!useScienceProcessing || (pollingInterval == 0 && foundImages == validNumFilteredFiles))
                 {
                 reset();
@@ -6788,6 +6833,23 @@ ImageProcessor removeGradient(ImageProcessor ip) { //Removes the average gradien
 			return list;
 		}
 	}
+    
+    void setfileSizeChangeWaitTime()
+        {
+        GenericDialog gd = new GenericDialog ("Set time to wait to recheck if new file write has completed");
+
+        gd.addMessage ("Before attempting to open a new file that is being written to disk,");
+        gd.addMessage ("DP checks for the filesize to stop changing.");
+        gd.addMessage ("Set the time to wait to recheck if the file size has stopped changing.");
+        gd.addMessage ("The default time is 500 milli-seconds.");
+		gd. addNumericField ("Wait time: ",fileSizeChangeWaitTime, 0, 10, "(milli-seconds)");
+        gd.addMessage ("");
+
+		gd.showDialog();
+		if (gd.wasCanceled()) return;
+		fileSizeChangeWaitTime = (int)gd.getNextNumber();
+        Prefs.set("dataproc.fileSizeChangeWaitTime", fileSizeChangeWaitTime);
+        }
 
     //extract the integer number within a string
     long stringLongVal(String s){
@@ -6897,6 +6959,7 @@ ImageProcessor removeGradient(ImageProcessor ip) { //Removes the average gradien
         showMasters = Prefs.get ("dataproc.showMasters",showMasters);
         showRawCals = Prefs.get ("dataproc.showRawCals",showRawCals);                
         showScience = Prefs.get ("dataproc.showScience",showScience);
+        autoRunAndClose = Prefs.get ("dataproc.autoRunAndClose",autoRunAndClose);
         enableFileNumberFiltering =  Prefs.get ("dataproc.enableFileNumberFiltering",enableFileNumberFiltering);
         useGradientRemoval = Prefs.get ("dataproc.useGradientRemoval",useGradientRemoval);
         useCosmicRemoval = Prefs.get ("dataproc.useCosmicRemoval",useCosmicRemoval);
@@ -6911,6 +6974,7 @@ ImageProcessor removeGradient(ImageProcessor ip) { //Removes the average gradien
         dialogFrameLocationY = (int) Prefs.get ("dataproc.dialogFrameLocationY",dialogFrameLocationY);
         selectedObjectCoordinateSource = (int) Prefs.get ("dataproc.selectedObjectCoordinateSource",selectedObjectCoordinateSource);
         selectedObservatoryLocationSource = (int) Prefs.get ("dataproc.selectedObservatoryLocationSource",selectedObservatoryLocationSource);
+        fileSizeChangeWaitTime = (int) Prefs.get ("dataproc.fileSizeChangeWaitTime",fileSizeChangeWaitTime);
         sortNumerically = Prefs.get ("dataproc.sortNumerically",sortNumerically);
         preMacro1AutoLevel = Prefs.get("dataproc.preMacro1AutoLevel",preMacro1AutoLevel);
         postMacro1AutoLevel = Prefs.get("dataproc.postMacro1AutoLevel",postMacro1AutoLevel);
@@ -7028,6 +7092,7 @@ ImageProcessor removeGradient(ImageProcessor ip) { //Removes the average gradien
         Prefs.set ("dataproc.showMasters",showMasters);
         Prefs.set ("dataproc.showRawCals",showRawCals);
         Prefs.set ("dataproc.showScience",showScience);
+        Prefs.set ("dataproc.autoRunAndClose",autoRunAndClose);
         Prefs.set ("dataproc.useGradientRemoval",useGradientRemoval);
         Prefs.set ("dataproc.useCosmicRemoval",useCosmicRemoval);
         Prefs.set ("dataproc.showLog",showLog);
@@ -7042,6 +7107,7 @@ ImageProcessor removeGradient(ImageProcessor ip) { //Removes the average gradien
         Prefs.set ("dataproc.dialogFrameLocationY",dialogFrameLocationY);
         Prefs.set ("dataproc.selectedObjectCoordinateSource",selectedObjectCoordinateSource);
         Prefs.set ("dataproc.selectedObservatoryLocationSource",selectedObservatoryLocationSource);
+        Prefs.set ("dataproc.fileSizeChangeWaitTime",fileSizeChangeWaitTime);
         Prefs.set ("dataproc.preMacro1AutoLevel",preMacro1AutoLevel);
         Prefs.set ("dataproc.postMacro1AutoLevel",postMacro1AutoLevel);
         Prefs.set ("dataproc.postMacro2AutoLevel",postMacro2AutoLevel);

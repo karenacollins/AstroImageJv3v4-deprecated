@@ -268,8 +268,11 @@ public class Stack_Aligner extends MultiAperture_
 
         double dx = 0.0;
         double dy = 0.0; 
+        double dxNoCen = 0.0;
+        double dyNoCen = 0.0;
         double[] xy;
         int numCentroids = 0;
+        int numNoCentroids = 0;
         if (runningWCSOnlyAlignment)
             {
             if (!hasWCS)
@@ -319,13 +322,21 @@ public class Stack_Aligner extends MultiAperture_
                     dy += yPos[i]-yRef[i];
                     numCentroids++;
                     }
+                else
+                    {
+                    dxNoCen += xPos[i]-xRef[i];
+                    dyNoCen += yPos[i]-yRef[i];
+                    numNoCentroids++;
+                    }
                 }
             if (numCentroids == 0)
                 {
-                IJ.beep();
-                IJ.showMessage("No centroid apertures selected. Aborting alignment. Re-run and include apertures with centroid enabled.");
-                shutDown();
-                return;
+                dx = dxNoCen/numNoCentroids;
+                dy = dyNoCen/numNoCentroids;
+                //IJ.beep();
+                //IJ.showMessage("No centroid apertures selected. Aborting alignment. Re-run and include apertures with centroid enabled.");
+                //shutDown();
+                //return;
                 }
             else
                 {

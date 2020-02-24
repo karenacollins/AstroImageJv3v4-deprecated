@@ -71,7 +71,7 @@ import javax.swing.border.EmptyBorder;
  *
  * To create version outside of the Astronomy plugins, comment in the "// plain ..." lines and comment out the "// astroj ..." lines
  */
-public class MultiPlot_ implements PlugIn
+public class MultiPlot_ implements PlugIn, KeyListener
         {
         static boolean panelsUpdating;
         static String title;
@@ -131,6 +131,12 @@ public class MultiPlot_ implements PlugIn
         static boolean showXAxisAsDaysSinceTc;
         static double T0;
         static double period;
+        static double duration;
+        static double netT0;
+        static double netPeriod;
+        static boolean twoxPeriod;
+        static boolean oddNotEven;
+        static int[] smoothLen;
         static boolean showXScaleInfo;
         static boolean showYScaleInfo, showYNormInfo;
         static boolean showYShiftInfo;
@@ -244,6 +250,7 @@ public class MultiPlot_ implements PlugIn
         static boolean multiUpdate;
         static int selectedRow;
 
+        static boolean ignoreUpdate;
         static String vMarker1TopText;
         static String vMarker1BotText;
         static String vMarker2TopText;
@@ -254,7 +261,9 @@ public class MultiPlot_ implements PlugIn
         static boolean saveTable;
         static boolean saveApertures;
         static boolean saveLog, saveFitPanels, saveFitPanelText, saveDataSubset, showDataSubsetPanel;
-        static boolean saveAllPNG;          
+        static boolean saveAllPNG;
+        static boolean unscale;
+        static boolean unshift;
         static String imageSuffix;
         static String aperSuffix;
         static String logSuffix, fitPanelSuffix, fitPanelTextSuffix, dataSubsetSuffix;
@@ -360,7 +369,7 @@ public class MultiPlot_ implements PlugIn
         static JSpinner orbitalPeriodStepSpinner, eccentricityStepSpinner, omegaStepSpinner, teffStepSpinner, jminuskStepSpinner, mStarStepSpinner, rStarStepSpinner, rhoStarStepSpinner;
         static JPopupMenu orbitalPeriodStepPopup, eccentricityStepPopup, omegaStepPopup, teffStepPopup,  jminuskStepPopup, mStarStepPopup, rStarStepPopup, rhoStarStepPopup;
         static JPanel orbitalPeriodStepPanel, eccentricityStepPanel, omegaStepPanel, teffStepPanel, jminuskStepPanel, mStarStepPanel, rStarStepPanel, rhoStarStepPanel;
-        
+        static JPanel t0panel, periodpanel, durationpanel;
         static JButton[] extractPriorsButton;
         static JCheckBox[] autoUpdatePriorsCB;
         static boolean[] autoUpdatePriors;
@@ -504,6 +513,7 @@ public class MultiPlot_ implements PlugIn
 
         static JRadioButton autoxButton, firstxButton, customxButton;
         static JRadioButton autoyButton, firstyButton, customyButton;
+        static JRadioButton unphasedButton, dayssincetcButton, hourssincetcButton, orbitalphaseButton;
         
         static JRadioButton useGJDButton, useHJDButton, useBJDButton, useManualRaDecButton, useTableRaDecButton;
         static boolean useGJD = true, useHJD = false, useBJD = false, useTableRaDec = false;
@@ -520,7 +530,7 @@ public class MultiPlot_ implements PlugIn
         static JPopupMenu ymaxsteppopup,yminsteppopup;
         static JPopupMenu plotwidthsteppopup, plotheightsteppopup, trimdataheadsteppopup, trimdatatailsteppopup;
         static JPopupMenu xaxispopup, yaxispopup, legendpopup;
-        static JPopupMenu xsteppopup;
+        static JPopupMenu xsteppopup, T0steppopup, periodsteppopup, durationsteppopup;
 
         static SpinnerModel ymaxstepmodel,yminstepmodel;
         static SpinnerModel plotwidthstepmodel, plotheightstepmodel;
@@ -530,20 +540,23 @@ public class MultiPlot_ implements PlugIn
         static SpinnerModel trimdataheadmodel, trimdatatailmodel, trimdataheadstepmodel, trimdatatailstepmodel;
         static SpinnerModel vmarker1spinnermodel, vmarker2spinnermodel;
         static SpinnerModel xstepmodel, mfmarker1spinnermodel, dmarker1spinnermodel, dmarker2spinnermodel, dmarker3spinnermodel, dmarker4spinnermodel;
+        static SpinnerModel T0spinnermodel, periodspinnermodel, durationspinnermodel;
+        static SpinnerModel T0stepspinnermodel, periodstepspinnermodel, durationstepspinnermodel;
 
         static JSpinner xwidthspinner, xminspinner, xmaxspinner, xmultiplierspinner, ymultiplierspinner;
         static JSpinner yminspinner, ymaxspinner, plotheightspinner, plotwidthspinner;
         static JSpinner trimdataheadspinner, trimdatatailspinner, trimdataheadstepspinner, trimdatatailstepspinner;
         static JSpinner vmarker1spinner, vmarker2spinner;
         static JSpinner xstepspinner, mfmarker1spinner, dmarker1spinner, dmarker2spinner, dmarker3spinner, dmarker4spinner;        
-
+        static JSpinner T0stepspinner, periodstepspinner, durationstepspinner;
+        static JSpinner T0spinner, periodspinner, durationspinner;
 
 //        static JCheckBox usextickscheckbox, useytickscheckbox, usexgridcheckbox;
 //        static JCheckBox useygridcheckbox, usexnumberscheckbox, useynumberscheckbox;
-        static JCheckBox showVMarker1CB, showVMarker2CB;
+        static JCheckBox showVMarker1CB, showVMarker2CB, twoxPeriodCB, oddNotEvenCB;
         static JCheckBox showMFMarkersCB, showDMarkersCB, useDMarker1CB, useDMarker4CB;
 
-        static JButton moreybutton, closebutton, grabautoxbutton, grabautoybutton, updateplotbutton, refStarButton, OKbutton;
+        static JButton moreybutton, closebutton, grabautoxbutton, grabautoybutton, updateplotbutton, addastrodatabutton, refStarButton, OKbutton;
 
         static String tableName;
         static String[] columns, unfilteredColumns, oldUnfilteredColumns;
@@ -572,6 +585,7 @@ public class MultiPlot_ implements PlugIn
         static int maxColumnLength;
         static double vMarker1Value=0.5, vMarker2Value=0.7;
         static double xStep=0.001;
+        static double T0Step=0.001, periodStep=0.0001, durationStep=0.01;
         static double dMarker1Value=0.3, dMarker2Value=0.5, dMarker3Value=0.7, dMarker4Value=0.9;  
         static double mfMarker1Value=0.6;
         static boolean showMFMarkers=false;
@@ -596,6 +610,7 @@ public class MultiPlot_ implements PlugIn
         static boolean[] hasOpErrors;  //indicates operator error is available for a curve
         static boolean[] lines;
         static boolean[] smooth;
+        static boolean shiftIsDown;
         static int[] marker, residualSymbol;
         static Color[] color, modelColor, residualModelColor, residualColor;
         static int[] markerIndex;
@@ -695,7 +710,9 @@ public class MultiPlot_ implements PlugIn
         static JComboBox[] residualColorSelection;
 
         static SpinnerModel[] binsizespinnermodel;
+        static SpinnerModel[] smoothlenspinnermodel;
         static JSpinner[] binsizespinner;
+        static JSpinner[] smoothlenspinner;
         static JPanel[] morelegendradiopanelgroup;
         static JPanel[] autoscalepanelgroup;
         static JPanel[] customscalepanelgroup;
@@ -1374,6 +1391,9 @@ static public void updateColumnLists()
                     excludedTailSamples = n - excludedHeadSamples - 1;
                     }
                 excluded = excludedHeadSamples + excludedTailSamples;
+                
+                netT0 = (twoxPeriod && oddNotEven) ? T0 - period : T0;
+                netPeriod = twoxPeriod ? 2*period : period;
 
                 int magSign = negateMag?1:-1;
                 for (int i=0;i<maxCurves;i++)
@@ -1522,36 +1542,6 @@ static public void updateColumnLists()
                                     for (int j=0; j < nn[curve]; j++)
                                         {
                                         x[curve][j] += 2400000;
-                                        }
-                                    }
-                                if (!showXAxisNormal)
-                                    {
-                                    if (showXAxisAsPhase)
-                                        {
-                                        for (int j=0; j < nn[curve]; j++)
-                                            {
-                                            x[curve][j] = ((x[curve][j] - T0)%period)/period;
-                                            if (x[curve][j] > 0.5) x[curve][j] -= 1.0;
-                                            }
-                                        }   
-                                    else if (showXAxisAsDaysSinceTc)
-                                        {
-                                        double halfPeriod = period/2.0;
-                                        for (int j=0; j < nn[curve]; j++)
-                                            {
-                                            x[curve][j] = ((x[curve][j] - T0)%period);
-                                            if (x[curve][j] > halfPeriod) x[curve][j] -= period;
-                                            }                                      
-                                        } 
-                                    else if (showXAxisAsHoursSinceTc)
-                                        {
-                                        double halfPeriod = period/2.0;
-                                        for (int j=0; j < nn[curve]; j++)
-                                            {
-                                            x[curve][j] = ((x[curve][j] - T0)%period);
-                                            if (x[curve][j] > halfPeriod) x[curve][j] -= period;
-                                            x[curve][j] *= 24;
-                                            }                                      
                                         }
                                     }
                                 }
@@ -1970,30 +1960,82 @@ static public void updateColumnLists()
                                         }
                                 }
                 
-                        int csmwidth = 31;
-                        if (smooth[curve] && nn[curve]>csmwidth)
+                        if (plotY[curve] && smooth[curve] && nn[curve]>2*smoothLen[curve])
                             {
                             double[] xl = new double[nn[curve]];
                             double[] yl = new double[nn[curve]];
+                            double[] xphase = new double[nn[curve]];
+                            double[] yphase = new double[nn[curve]];
+                            double xfold = 0.0;
+                            int nskipped = 0;
+                            double xmax = Double.NEGATIVE_INFINITY;
+                            double xmin = Double.POSITIVE_INFINITY;
+                            double halfPeriod = netPeriod/2.0;
                             for (int xx=0; xx<nn[curve]; xx++)
                                 {
-                                yl[xx] = y[curve][xx];
-                                xl[xx] = x[curve][xx] - (int) x[curve][0];
+                                if (false) //showXAxisNormal
+                                    {
+                                    yl[xx] = y[curve][xx];
+                                    xl[xx] = x[curve][xx] - (int) x[curve][0];
+                                    }
+                                else
+                                    {
+                                    xfold = ((x[curve][xx] - netT0)%netPeriod);
+                                    if (xfold > halfPeriod) xfold -= netPeriod;
+                                    else if (xfold < -halfPeriod) xfold += netPeriod;
+                                    if (Math.abs(xfold) < duration/48.0)
+                                        {
+                                        nskipped++;
+                                        }
+                                    else
+                                        {
+                                        yphase[xx-nskipped] = y[curve][xx];
+                                        xphase[xx-nskipped] = x[curve][xx] - (int)x[curve][0];
+                                        if (x[curve][xx] > xmax) xmax = x[curve][xx];
+                                        if (x[curve][xx] < xmin) xmin = x[curve][xx];
+                                        }
+                                    }
                                 }
-                            Smooth csm = new Smooth(xl, yl);
-                            //csm.movingAverage(csmwidth);
-                            csm.savitzkyGolay(csmwidth);
-                            csm.setSGpolyDegree(2);
-                            double yave=0.0;
-                            for (int xx=0; xx<nn[curve]; xx++)
+                            if (true) //!showXAxisNormal
                                 {
-                                yave += yl[xx];
+                                xl = new double[nn[curve]-nskipped];
+                                yl = new double[nn[curve]-nskipped];                                
+                                for (int xx=0; xx<nn[curve]-nskipped; xx++)
+                                    {
+                                    yl[xx] = yphase[xx];
+                                    xl[xx] = xphase[xx];
+                                    }
                                 }
-                            yave /= nn[curve];
-                            for (int xx=0; xx<nn[curve]; xx++)
+                            if (nn[curve] - nskipped > 2*smoothLen[curve])
                                 {
-                                //y[1][xx] = csm.interpolateMovingAverage(xl[xx]);
-                                y[curve][xx] = yl[xx] - csm.interpolateSavitzkyGolay(xl[xx]) +yave;
+                                double smoothVal = 0.0;
+                                Smooth csm = new Smooth(xl, yl);
+                                //csm.movingAverage(csmwidth);
+                                csm.savitzkyGolay(smoothLen[curve]);
+                                csm.setSGpolyDegree(2);
+                                double yave=0.0;
+                                for (int xx=0; xx<nn[curve]-nskipped; xx++)
+                                    {
+                                    yave += yl[xx];
+                                    }
+                                yave /= (nn[curve]-nskipped);
+                                for (int xx=0; xx<nn[curve]; xx++)
+                                    {
+                                    if (x[curve][xx] > xmax)
+                                        {
+                                        smoothVal = csm.interpolateSavitzkyGolay(xmax - (int)x[curve][0]);
+                                        }
+                                    else if (x[curve][xx] < xmin)
+                                        {
+                                        smoothVal = csm.interpolateSavitzkyGolay(xmin - (int)x[curve][0]);
+                                        }
+                                    else
+                                        {
+                                        smoothVal = csm.interpolateSavitzkyGolay(x[curve][xx] - (int)x[curve][0]);
+                                        }
+                                    //y[1][xx] = csm.interpolateMovingAverage(xl[xx]);
+                                    y[curve][xx] = y[curve][xx] - smoothVal + yave;
+                                    }
                                 }
                             //y[curve]=smoothed.getMovingAverageValues();
                             }
@@ -2014,6 +2056,39 @@ static public void updateColumnLists()
                     {
                     if (plotY[curve])
                         {
+                        if (!showXAxisNormal)
+                            {
+                            if (showXAxisAsPhase)
+                                {
+                                for (int j=0; j < nn[curve]; j++)
+                                    {
+                                    x[curve][j] = ((x[curve][j] - netT0)%netPeriod)/netPeriod;
+                                    if (x[curve][j] > 0.5) x[curve][j] -= 1.0;
+                                    else if (x[curve][j] < -0.5) x[curve][j] += 1.0;
+                                    }
+                                }   
+                            else if (showXAxisAsDaysSinceTc)
+                                {
+                                double halfPeriod = netPeriod/2.0;
+                                for (int j=0; j < nn[curve]; j++)
+                                    {
+                                    x[curve][j] = ((x[curve][j] - netT0)%netPeriod);
+                                    if (x[curve][j] > halfPeriod) x[curve][j] -= netPeriod;
+                                    else if (x[curve][j] < -halfPeriod) x[curve][j] += netPeriod;
+                                    }                                      
+                                } 
+                            else if (showXAxisAsHoursSinceTc)
+                                {
+                                double halfPeriod = netPeriod/2.0;
+                                for (int j=0; j < nn[curve]; j++)
+                                    {
+                                    x[curve][j] = ((x[curve][j] - netT0)%netPeriod);
+                                    if (x[curve][j] > halfPeriod) x[curve][j] -= netPeriod;
+                                    else if (x[curve][j] < -halfPeriod) x[curve][j] += netPeriod;
+                                    x[curve][j] *= 24;
+                                    }                                      
+                                }
+                            }
                         xMinimum[curve] = minOf(x[curve],nn[curve]); //FIND MIN AND MAX X OF EACH SELECTED DATASET
                         xMaximum[curve] = maxOf(x[curve],nn[curve]);
                         if ((firstCurve == -1))
@@ -2075,6 +2150,11 @@ static public void updateColumnLists()
                     if (xExponent != 0) xmultiplierspinner.setValue(0);
                     xJD = (int)xPlotMin;
                     xOffset = (double)xJD;
+                    if (showVMarker1 && vMarker1Value<0.0)
+                        {
+                        xOffset += 1.0;
+                        xPlotMinRaw += 1.0;
+                        }
                     }
                 for (curve = 0; curve<maxCurves; curve++)
                     {
@@ -3524,17 +3604,17 @@ static public void updateColumnLists()
                         {
                         if (showXAxisAsPhase)
                                 {
-                                xlab = "Orbital Phase (periods) (T0 = "+T0+", P = "+period+")"; 
+                                xlab = "Orbital Phase (periods) (T0 = "+netT0+", P = "+netPeriod+")"; 
                                 xGoodLabel = true;
                                 }
                         else if (showXAxisAsDaysSinceTc)
                                 {
-                                xlab = "Days Since Tc (T0 = "+T0+", P = "+period+")"; 
+                                xlab = "Days Since Tc (T0 = "+netT0+", P = "+netPeriod+")"; 
                                 xGoodLabel = true;
                                 }                        
                         else if (showXAxisAsHoursSinceTc)
                                 {
-                                xlab = "Hours Since Tc (T0 = "+T0+", P = "+period+")"; 
+                                xlab = "Hours Since Tc (T0 = "+netT0+", P = "+netPeriod+")"; 
                                 xGoodLabel = true;
                                 }                        
                         else if (xlabel2[curve].contains("J.D.") || xlabel2[curve].contains("JD"))                            
@@ -3909,11 +3989,11 @@ static public void updateColumnLists()
                         else 
                             plot.setLineWidth(1);
                         plot.setColor(color[curve]);                        
-                        if (xModel1[curve] != null && yModel1[curve] != null && detrendFitIndex[curve] != 9)
+                        if (xModel1[curve] != null && yModel1[curve] != null && xModel1[curve].length == yModel1[curve].length && detrendFitIndex[curve] != 9)
                             {
                             plot.addPoints(Arrays.copyOf(xModel1[curve],xModel1[curve].length),Arrays.copyOf(yModel1[curve],yModel1[curve].length),ij.gui.Plot.LINE);
                             }
-                        if (xModel2[curve] != null && yModel2[curve] != null && (detrendFitIndex[curve] != 9 || showModel[curve]))
+                        if (xModel2[curve] != null && yModel2[curve] != null && xModel2[curve].length == yModel2[curve].length && (detrendFitIndex[curve] != 9 || showModel[curve]))
                             {
                             if (detrendFitIndex[curve] == 9) 
                                 {
@@ -3949,7 +4029,10 @@ static public void updateColumnLists()
                             {
                              for (int j=0; j < nn[curve]-1; j++)
                                 {
-                                plot.drawLine(x[curve][j],y[curve][j],x[curve][j+1],y[curve][j+1]);
+                                if (x[curve][j+1] > x[curve][j])
+                                    {
+                                    plot.drawLine(x[curve][j],y[curve][j],x[curve][j+1],y[curve][j+1]);
+                                    }
                                 }
                             }
                         
@@ -4282,6 +4365,7 @@ static public void updateColumnLists()
                         }
                     plot.setJustification(plot.CENTER);                    
                     plot.addLabel((dMarker2Value-plotMinX)/(plotMaxX-plotMinX), 1 - 16.0/plotSizeY, "Left");
+                    plot.addLabel((dMarker2Value-plotMinX)/(plotMaxX-plotMinX), 1 + 4.0/plotSizeY, threePlaces.format(dMarker2Value));
 
                     numDashes = -10 + (postDMarker3Ref - plotMinY)/dashLength;     //plot dMarker3
                     for (int dashCount = 0; dashCount < numDashes; dashCount +=2)     
@@ -4289,6 +4373,7 @@ static public void updateColumnLists()
                         plot.drawLine(dMarker3Value, postDMarker3Ref-dashLength*dashCount, dMarker3Value, postDMarker3Ref-dashLength*(dashCount+1));
                         }
                     plot.addLabel((dMarker3Value-plotMinX)/(plotMaxX-plotMinX), 1 - 16.0/plotSizeY, "Right");
+                    plot.addLabel((dMarker3Value-plotMinX)/(plotMaxX-plotMinX), 1 + 4.0/plotSizeY, threePlaces.format(dMarker3Value));
                     
                     if (useDMarker1)   //plot dMarker1
                         {
@@ -4303,7 +4388,8 @@ static public void updateColumnLists()
                             plot.drawLine(dMarker1Value, preDmark1Ref-dashLength*dashCount, dMarker1Value, preDmark1Ref-dashLength*(dashCount+1));
                             }     
                         plot.addLabel((dMarker1Value-plotMinX)/(plotMaxX-plotMinX), 1 - 25.0/plotSizeY, "Left");
-                        plot.addLabel((dMarker1Value-plotMinX)/(plotMaxX-plotMinX), 1 - 7.0/plotSizeY, "Trim");                         
+                        plot.addLabel((dMarker1Value-plotMinX)/(plotMaxX-plotMinX), 1 - 7.0/plotSizeY, "Trim");
+                        plot.addLabel((dMarker1Value-plotMinX)/(plotMaxX-plotMinX), 1 + 33.0/plotSizeY, threePlaces.format(dMarker1Value));
                         }
                     if (useDMarker4)   //plot dMarker4
                         {
@@ -4318,7 +4404,8 @@ static public void updateColumnLists()
                             plot.drawLine(dMarker4Value, postDMarker4Ref-dashLength*dashCount, dMarker4Value, postDMarker4Ref-dashLength*(dashCount+1));
                             }       
                         plot.addLabel((dMarker4Value-plotMinX)/(plotMaxX-plotMinX), 1 - 25.0/plotSizeY, "Right");
-                        plot.addLabel((dMarker4Value-plotMinX)/(plotMaxX-plotMinX), 1 - 7.0/plotSizeY, "Trim");                        
+                        plot.addLabel((dMarker4Value-plotMinX)/(plotMaxX-plotMinX), 1 - 7.0/plotSizeY, "Trim");    
+                        plot.addLabel((dMarker4Value-plotMinX)/(plotMaxX-plotMinX), 1 + 33.0/plotSizeY, threePlaces.format(dMarker4Value));
                         }                  
                     }             
                 if (showMFMarkers) drawVMarker(mfMarker1Value, "Meridian", "Flip", new Color(84,201,245));
@@ -4487,6 +4574,7 @@ static public void updateColumnLists()
                     plot.setJustification(plot.CENTER);
                     plot.addLabel((vMarkerValue-plotMinX)/(plotMaxX-plotMinX), 1 - 25.0/plotSizeY, vMarkerTopText);
                     plot.addLabel((vMarkerValue-plotMinX)/(plotMaxX-plotMinX), 1 - 7.0/plotSizeY, vMarkerBotText);
+                    plot.addLabel((vMarkerValue-plotMinX)/(plotMaxX-plotMinX), 1 + 33.0/plotSizeY, threePlaces.format(vMarkerValue));
                     }        
         
     static void drawLegendSymbol(int marker, int width, Color color, double legPosY, String llab)
@@ -4635,13 +4723,13 @@ static public void updateColumnLists()
             double ohm = forceCircularOrbit[curve]?0.0:omega[curve];
             if (useTransitFit[curve])
                 {
-                f0   = lockToCenter[curve][0] ? priorCenter[curve][0] : param[fp++]; // baseline flux
-                p0   = lockToCenter[curve][1] ? Math.sqrt(priorCenter[curve][1]) : param[fp++]; // r_p/r_*
-                ar   = lockToCenter[curve][2] ? priorCenter[curve][2] : param[fp++]; // a/r_*
-                tc   = lockToCenter[curve][3] ? priorCenter[curve][3] : param[fp++]; //transit center time
-                incl = lockToCenter[curve][4] ? priorCenter[curve][4]*Math.PI/180.0 : param[fp++];  //inclination
-                u1   = lockToCenter[curve][5] ? priorCenter[curve][5] : param[fp++];  //quadratic limb darkening parameter 1
-                u2   = lockToCenter[curve][6] ? priorCenter[curve][6] : param[fp++];  //quadratic limb darkening parameter 2
+                f0   = lockToCenter[curve][0] ? priorCenter[curve][0] : param[fp<nPars?fp++:nPars-1]; // baseline flux
+                p0   = lockToCenter[curve][1] ? Math.sqrt(priorCenter[curve][1]) : param[fp<nPars?fp++:nPars-1]; // r_p/r_*
+                ar   = lockToCenter[curve][2] ? priorCenter[curve][2] : param[fp<nPars?fp++:nPars-1]; // a/r_*
+                tc   = lockToCenter[curve][3] ? priorCenter[curve][3] : param[fp<nPars?fp++:nPars-1]; //transit center time
+                incl = lockToCenter[curve][4] ? priorCenter[curve][4]*Math.PI/180.0 : param[fp<nPars?fp++:nPars-1];  //inclination
+                u1   = lockToCenter[curve][5] ? priorCenter[curve][5] : param[fp<nPars?fp++:nPars-1];  //quadratic limb darkening parameter 1
+                u2   = lockToCenter[curve][6] ? priorCenter[curve][6] : param[fp<nPars?fp++:nPars-1];  //quadratic limb darkening parameter 2
                 lcModel[curve] = IJU.transitModel(detrendXs[curve], f0, incl, p0, ar, tc, orbitalPeriod[curve],
                         e, ohm, u1, u2, useLonAscNode[curve], lonAscNode[curve]);
                 }
@@ -5189,45 +5277,45 @@ static public void updateColumnLists()
                 if (addRA2000) ra2000Col = table.getColumnIndex(ra2000Name);
                 if (addDec2000) dec2000Col = table.getColumnIndex(dec2000Name);
 
-                if ((addAirmass && airmassCol != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addAltitude && altitudeCol != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addAzimuth && azimuthCol != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addHourAngle && hourAngleCol != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addZenithDistance && zenithDistanceCol != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addGJD && gjdCol != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addHJD && hjdCol != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addHJDCorr && hjdCorrCol != MeasurementTable.COLUMN_NOT_FOUND) ||                        
-                    (addBJD && bjdCol != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addBJDCorr && bjdCorrCol != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addRaNow && raNowCol != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addDecNow && decNowCol != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addRA2000 && ra2000Col != MeasurementTable.COLUMN_NOT_FOUND) ||
-                    (addDec2000 && dec2000Col != MeasurementTable.COLUMN_NOT_FOUND) )
-                    {
-                    GenericDialog gd = new GenericDialog ("Over-write existing data?", addAstroDataFrame.getX()+100, addAstroDataFrame.getY()+100);
-                    gd.addMessage ((airmassCol != MeasurementTable.COLUMN_NOT_FOUND?"Airmass column: "+airmassName+"\n":"")+
-                                   (altitudeCol != MeasurementTable.COLUMN_NOT_FOUND?"Altitude column: "+altitudeName+"\n":"")+
-                                   (azimuthCol != MeasurementTable.COLUMN_NOT_FOUND?"Azimuth column: "+azimuthName+"\n":"")+
-                                   (hourAngleCol != MeasurementTable.COLUMN_NOT_FOUND?"Hour Angle column: "+hourAngleName+"\n":"")+
-                                   (zenithDistanceCol != MeasurementTable.COLUMN_NOT_FOUND?"Zenith Distance column: "+zenithDistanceName+"\n":"")+
-                                   (gjdCol != MeasurementTable.COLUMN_NOT_FOUND?"JD column: "+gjdName+"\n":"")+
-                                   (hjdCol != MeasurementTable.COLUMN_NOT_FOUND?"HJD column: "+hjdName+"\n":"")+
-                                   (hjdCorrCol != MeasurementTable.COLUMN_NOT_FOUND?"HJD Correction column: "+hjdCorrName+"\n":"")+                            
-                                   (bjdCol != MeasurementTable.COLUMN_NOT_FOUND?"BJD column: "+bjdName+"\n":"")+
-                                   (bjdCorrCol != MeasurementTable.COLUMN_NOT_FOUND?"BJD Correction column: "+bjdCorrName+"\n":"")+
-                                   (raNowCol != MeasurementTable.COLUMN_NOT_FOUND?"RA OBS column: "+raNowName+"\n":"")+
-                                   (decNowCol != MeasurementTable.COLUMN_NOT_FOUND?"DEC OBS column: "+decNowName+"\n":"")+
-                                   (ra2000Col != MeasurementTable.COLUMN_NOT_FOUND?"RA J2000 column: "+ra2000Name+"\n":"")+
-                                   (dec2000Col != MeasurementTable.COLUMN_NOT_FOUND?"Dec J2000 column: "+dec2000Name+"\n":"")+
-                                    "\n"+
-                                    "table column name(s) are already in use.\nPress OK to over-write existing data.");
-                    gd.showDialog();
-                    if (gd.wasCanceled()) 
-                        {
-                        astroConverterUpdating = false;
-                        return;
-                        }
-                    }
+//                if ((addAirmass && airmassCol != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addAltitude && altitudeCol != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addAzimuth && azimuthCol != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addHourAngle && hourAngleCol != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addZenithDistance && zenithDistanceCol != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addGJD && gjdCol != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addHJD && hjdCol != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addHJDCorr && hjdCorrCol != MeasurementTable.COLUMN_NOT_FOUND) ||                        
+//                    (addBJD && bjdCol != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addBJDCorr && bjdCorrCol != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addRaNow && raNowCol != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addDecNow && decNowCol != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addRA2000 && ra2000Col != MeasurementTable.COLUMN_NOT_FOUND) ||
+//                    (addDec2000 && dec2000Col != MeasurementTable.COLUMN_NOT_FOUND) )
+//                    {
+//                    GenericDialog gd = new GenericDialog ("Over-write existing data?", addAstroDataFrame.getX()+100, addAstroDataFrame.getY()+100);
+//                    gd.addMessage ((airmassCol != MeasurementTable.COLUMN_NOT_FOUND?"Airmass column: "+airmassName+"\n":"")+
+//                                   (altitudeCol != MeasurementTable.COLUMN_NOT_FOUND?"Altitude column: "+altitudeName+"\n":"")+
+//                                   (azimuthCol != MeasurementTable.COLUMN_NOT_FOUND?"Azimuth column: "+azimuthName+"\n":"")+
+//                                   (hourAngleCol != MeasurementTable.COLUMN_NOT_FOUND?"Hour Angle column: "+hourAngleName+"\n":"")+
+//                                   (zenithDistanceCol != MeasurementTable.COLUMN_NOT_FOUND?"Zenith Distance column: "+zenithDistanceName+"\n":"")+
+//                                   (gjdCol != MeasurementTable.COLUMN_NOT_FOUND?"JD column: "+gjdName+"\n":"")+
+//                                   (hjdCol != MeasurementTable.COLUMN_NOT_FOUND?"HJD column: "+hjdName+"\n":"")+
+//                                   (hjdCorrCol != MeasurementTable.COLUMN_NOT_FOUND?"HJD Correction column: "+hjdCorrName+"\n":"")+                            
+//                                   (bjdCol != MeasurementTable.COLUMN_NOT_FOUND?"BJD column: "+bjdName+"\n":"")+
+//                                   (bjdCorrCol != MeasurementTable.COLUMN_NOT_FOUND?"BJD Correction column: "+bjdCorrName+"\n":"")+
+//                                   (raNowCol != MeasurementTable.COLUMN_NOT_FOUND?"RA OBS column: "+raNowName+"\n":"")+
+//                                   (decNowCol != MeasurementTable.COLUMN_NOT_FOUND?"DEC OBS column: "+decNowName+"\n":"")+
+//                                   (ra2000Col != MeasurementTable.COLUMN_NOT_FOUND?"RA J2000 column: "+ra2000Name+"\n":"")+
+//                                   (dec2000Col != MeasurementTable.COLUMN_NOT_FOUND?"Dec J2000 column: "+dec2000Name+"\n":"")+
+//                                    "\n"+
+//                                    "table column name(s) are already in use.\nPress OK to over-write existing data.");
+//                    gd.showDialog();
+//                    if (gd.wasCanceled()) 
+//                        {
+//                        astroConverterUpdating = false;
+//                        return;
+//                        }
+//                    }
                 defaultOKForeground = OKbutton.getForeground();
                 Thread t = new Thread()
                     {
@@ -5346,6 +5434,10 @@ static public void updateColumnLists()
     
     static boolean updateMPCC(int row)  //set row negative to use first currently selected row 
         {
+        if (table == null) 
+            {
+            return false;
+            }
         JDColumn = (String) jdcolumnbox.getSelectedItem();
         jdCol = table.getColumnIndex(JDColumn);
         if (jdCol == MeasurementTable.COLUMN_NOT_FOUND)
@@ -5657,6 +5749,8 @@ static public void updateColumnLists()
             gd.addCheckbox("Add new column from model residuals error", saveNewResidualErrColumn);
             gd.addStringField("New column name (from Model Residual Error): ", residualErrHeading, 40);
             }
+        gd.addCheckbox("Remove Scale from Y-data and Y-error before saving", unscale);
+        gd.addCheckbox("Remove Shift from Y-data before saving", unshift);
 
         gd.addMessage ("***New data column(s) will be added to the open table.***\n***Save table to save new column(s) to disk.***");
         gd.showDialog();
@@ -5686,6 +5780,8 @@ static public void updateColumnLists()
             saveNewResidualErrColumn = gd.getNextBoolean();
             residualErrHeading = gd.getNextString();
             }
+        unscale = gd.getNextBoolean();
+        unshift = gd.getNextBoolean();
         table.setPrecision(6);
         int xColumn = ResultsTable.COLUMN_IN_USE;
         int yColumn = ResultsTable.COLUMN_IN_USE; 
@@ -5726,16 +5822,16 @@ static public void updateColumnLists()
             residualErrUsed = saveNewResidualErrColumn && (residualErrColumn == ResultsTable.COLUMN_IN_USE);
             }
         
-        if (xUsed || yUsed || yErrUsed || modelUsed || residualUsed || residualErrUsed)
-            {
-            gd = new GenericDialog ("Over-write existing data?", (main?mainFrame.getX():subFrame.getX())+100, (main?mainFrame.getY():subFrame.getY())+100);
-            gd.addMessage ((xUsed?"X-column: "+xHeading+"\n":"")+(yUsed?"Y-column: "+yHeading+"\n":"")+(yErrUsed?"Y-error column: "+yErrHeading+"\n":"")+
-                           (modelUsed?"Model column: "+modelHeading+"\n":"")+(residualUsed?"Residual column: "+residualHeading+"\n":"")+
-                           (residualErrUsed?"Residual Error column: "+residualErrHeading+"\n":"")+
-                           "name(s) are already in use.\nPress OK to over-write existing data.");
-            gd.showDialog();
-            if (gd.wasCanceled()) return;
-            }
+//        if (xUsed || yUsed || yErrUsed || modelUsed || residualUsed || residualErrUsed)
+//            {
+//            gd = new GenericDialog ("Over-write existing data?", (main?mainFrame.getX():subFrame.getX())+100, (main?mainFrame.getY():subFrame.getY())+100);
+//            gd.addMessage ((xUsed?"X-column: "+xHeading+"\n":"")+(yUsed?"Y-column: "+yHeading+"\n":"")+(yErrUsed?"Y-error column: "+yErrHeading+"\n":"")+
+//                           (modelUsed?"Model column: "+modelHeading+"\n":"")+(residualUsed?"Residual column: "+residualHeading+"\n":"")+
+//                           (residualErrUsed?"Residual Error column: "+residualErrHeading+"\n":"")+
+//                           "name(s) are already in use.\nPress OK to over-write existing data.");
+//            gd.showDialog();
+//            if (gd.wasCanceled()) return;
+//            }
         int skipNum = excludedHeadSamples<nn[c]?excludedHeadSamples:nn[c]-1;
         if (binSize[c] != 1 || skipNum < 0) skipNum = 0;
         if (saveNewXColumn)
@@ -5780,6 +5876,7 @@ static public void updateColumnLists()
         if (saveNewYColumn)
             {
             yColumn = table.getColumnIndex(yHeading);
+
             if (binSize[c] == 1 && skipNum > 0)
                 {
                 for (int i=0; i<skipNum; i++)
@@ -5803,10 +5900,21 @@ static public void updateColumnLists()
                 }
             else
                 {
-                for (int i=0; i<nn[c]; i++)
+                if (normIndex[c] != 0 && !mmag[c] && !force[c])
                     {
-                    table.setValue(yColumn, i+skipNum, y[c][i]);
-                    }                
+                    for (int i=0; i<nn[c]; i++)
+                        {
+                        //table.setValue(yColumn, i+skipNum, y[c][i]);
+                        table.setValue(yColumn, i+skipNum, 1 - (unscale?1.0/totalScaleFactor[c]:1.0)*(1.0 - (y[c][i] - subtotalShiftFactor[c])) + (unshift?0:subtotalShiftFactor[c]));
+                        }
+                    }
+                else
+                    {
+                    for (int i=0; i<nn[c]; i++)
+                        {
+                        table.setValue(yColumn, i+skipNum,(unscale?1.0/totalScaleFactor[c]:1.0)*((y[c][i]) - (unshift?subtotalShiftFactor[c]:0)));
+                        }
+                    }
                 }
             if (nn[c] < table.getCounter()-skipNum)
                 {
@@ -5828,7 +5936,8 @@ static public void updateColumnLists()
                 }             
             for (int i=0; i<nn[c]; i++)
                 {
-                table.setValue(yErrColumn, i+skipNum, yerr[c][i]);
+                //table.setValue(yErrColumn, i+skipNum, yerr[c][i]);
+                table.setValue(yErrColumn, i+skipNum, (unscale?1.0/totalScaleFactor[c]:1.0)*yerr[c][i]);
                 }                
             if (nn[c] < table.getCounter()-skipNum)
                 {
@@ -6025,7 +6134,7 @@ static public void updateColumnLists()
                 startDragSubImageX =plotImageCanvas.getSrcRect().x;
                 startDragSubImageY =plotImageCanvas.getSrcRect().y;
                 button2Drag = false;
-                if (e.isControlDown() && !e.isAltDown())  //handle control click to move trend lines
+                if (e.isControlDown())  //handle control click to move trend lines
                     {
                     if ((e.getModifiers() & MouseEvent.BUTTON1_MASK) != 0)
                         handleControlLeftClickDrag(e, startDragX, startDragY);
@@ -6218,7 +6327,7 @@ static public void updateColumnLists()
                                 IJ.showStatus("plot coordinates: x="+fourPlaces.format(x)+", y="+fourPlaces.format(y)+
                                               ", dx="+fourPlaces.format(dx)+", dy="+fourPlaces.format(dy));
                                 }
-                           else if (e.isControlDown() && !e.isAltDown()) // control right-drag (update vertical marker 3 or 4 position)
+                           else if (e.isControlDown()) // control right-drag (update vertical marker 3 or 4 position)
                                 {
                                 handleControlRightClickDrag(e, imageX, imageY);
                                 }                             
@@ -6273,7 +6382,7 @@ static public void updateColumnLists()
                                         IJ.showStatus("plot coordinates: x="+fourPlaces.format(x)+", y="+fourPlaces.format(y));
                                         }
                                     }
-                                else if (e.isControlDown() && !e.isAltDown()) // control left-drag (update left detrend position)
+                                else if (e.isControlDown()) // control left-drag (update left detrend position)
                                     {
                                     handleControlLeftClickDrag(e, imageX, imageY);   
                                     }                                
@@ -6334,11 +6443,13 @@ static public void updateColumnLists()
             boolean alreadyMoved = false;
             if (showDMarkers && x > dMarker2Value - delta && x < dMarker2Value + delta)
                 {
+                if (e.isAltDown()) dmarker3spinner.setValue(x+(Math.abs(vMarker2Value-vMarker1Value)));
                 dmarker2spinner.setValue(x);
                 alreadyMoved = true;
                 }
             if (showDMarkers && x > dMarker3Value - delta && x < dMarker3Value + delta)
                 {
+                if (e.isAltDown()) dmarker2spinner.setValue(x+(Math.abs(vMarker2Value-vMarker1Value)));
                 dmarker3spinner.setValue(x);
                 alreadyMoved = true;
                 }
@@ -6364,6 +6475,7 @@ static public void updateColumnLists()
                     }
                 else                   //update vertical marker 2 position
                     {
+                    if (e.isAltDown()) dmarker3spinner.setValue(x+(Math.abs(vMarker2Value-vMarker1Value)));
                     dmarker2spinner.setValue(x);
                     }
                 }
@@ -6382,10 +6494,11 @@ static public void updateColumnLists()
                 useDMarker4CB.setSelected(true);
                 useDMarker4 = true;                                    
                 dmarker4spinner.setValue(x);
-
                 }
             else                 //update vertical marker 3 position
                 {
+                double olddmarker3value = dMarker3Value;
+                if (e.isAltDown()) dmarker2spinner.setValue(x-(Math.abs(vMarker2Value-vMarker1Value)));
                 dmarker3spinner.setValue(x);
                 }
             plotcoordlabel.setText("x="+fourPlaces.format(x)+", y="+fourPlaces.format(y));
@@ -6516,6 +6629,8 @@ static public void updateColumnLists()
 
 static void initializeVariables()
         {
+        shiftIsDown = true;
+        ignoreUpdate = false;
         title = "Main Title";
         titlePosX = .5;
         titlePosY = 10;
@@ -6589,7 +6704,9 @@ static void initializeVariables()
         saveFitPanelText = true;
         saveDataSubset = true;
         showDataSubsetPanel = true;
-        saveAllPNG = true;          
+        saveAllPNG = true;    
+        unscale = true;
+        unshift = true;
         imageSuffix = "_field";
         aperSuffix = "_measurements";
         logSuffix = "_calibration"; 
@@ -6642,6 +6759,11 @@ static void initializeVariables()
         showXAxisAsDaysSinceTc = false;
         T0 = 0;
         period = 1;
+        duration = 3;
+        netT0 = 0;
+        netPeriod = 1;
+        twoxPeriod = false;
+        oddNotEven = false;
         showXScaleInfo = true;
         showYScaleInfo = true;
         showYNormInfo = true;
@@ -6922,6 +7044,7 @@ static void initializeVariables()
                 dof = new int[maxCurves];
                 sigma = new double[maxCurves];
                 nTries = new int[maxCurves];
+                smoothLen = new int[maxCurves];
                 converged = new boolean[maxCurves];
                 t14 = new double[maxCurves];
                 t23 = new double[maxCurves];
@@ -7166,6 +7289,8 @@ static void initializeVariables()
                 residualColorSelection = new JComboBox[maxCurves];
                 binsizespinnermodel = new SpinnerModel[maxCurves];
                 binsizespinner = new JSpinner[maxCurves];
+                smoothlenspinnermodel = new SpinnerModel[maxCurves];
+                smoothlenspinner = new JSpinner[maxCurves];
                 morelegendradiopanelgroup = new JPanel[maxCurves];
                 autoscalepanelgroup = new JPanel[maxCurves];
                 customscalepanelgroup = new JPanel[maxCurves];
@@ -7283,6 +7408,8 @@ static void initializeVariables()
                                 }
                         sigma[i] = 0.0;
                         autoUpdatePriors[i] = true;
+                        smooth[i] = false;
+                        smoothLen[i] = 31;
                         orbitalPeriod[i] = 3.0;
                         eccentricity[i] = 0.0;
                         omega[i] = 0.0;
@@ -8029,7 +8156,14 @@ static void initializeVariables()
                 createNEBReportMenuItem.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                             ij.plugin.Macro_Runner.runMacroFromJar("NEBSearchMacro.txt",""); }});
-                filemenu.add(createNEBReportMenuItem);   
+                filemenu.add(createNEBReportMenuItem); 
+                
+                JMenuItem createAAVSOReportMenuItem = new JMenuItem("Create AAVSO Exoplanet Database formatted data...");
+                createAAVSOReportMenuItem.setToolTipText("<html>"+"Create AAVSO formatted data for submission to the AAVSO Exoplanet Database.</html>");
+                createAAVSOReportMenuItem.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                            ij.plugin.Macro_Runner.runMacroFromJar("AAVSO_Exoplanet_Format.txt",""); }});
+                filemenu.add(createAAVSOReportMenuItem); 
                 
 //                JMenuItem createDmagVsRMSPlotMenuItem = new JMenuItem("Create Delta-magnitude vs. RMS plot...");
 //                createDmagVsRMSPlotMenuItem.setToolTipText("<html>"+"Create a Delta-magnitude vs. RMS plot for all apertures.<br>");
@@ -8045,7 +8179,7 @@ static void initializeVariables()
 //                            ij.plugin.Macro_Runner.runMacroFromJar("NEBLightCurvePlotWithPredDepth.txt",""); }}); 
 //                filemenu.add(createNEBLCPlotMenuItem);
                 
-                JMenuItem createMpcFormatMenuItem = new JMenuItem("Create Minor Planet Center (MPC) format...");
+                JMenuItem createMpcFormatMenuItem = new JMenuItem("Create Minor Planet Center (MPC) formatted data...");
                 createMpcFormatMenuItem.setToolTipText("<html>"+"Create MPC formatted data for submission to the Minor Planet Center.<br>"+
                                                                 "Open a table into Multi-plot before creating the MPC formatted data.</html>");
                 createMpcFormatMenuItem.addActionListener(new ActionListener() {
@@ -8429,103 +8563,103 @@ static void initializeVariables()
                         updatePlot(updateNoFits());}});
                 xaxismenu.add(xNumbersCB);                
                 
-                xaxismenu.addSeparator();
-
-                if (showXAxisNormal)
-                    {
-                    showXAxisAsPhase = false;
-                    showXAxisAsDaysSinceTc = false;
-                    showXAxisAsHoursSinceTc = false; 
-                    }
-                else if (showXAxisAsPhase)
-                    {
-                    showXAxisAsDaysSinceTc = false;
-                    showXAxisAsHoursSinceTc = false;                    
-                    }
-                else if (showXAxisAsDaysSinceTc)
-                    {
-                    showXAxisAsHoursSinceTc = false;                    
-                    }
-                else if (!showXAxisAsHoursSinceTc)
-                    {
-                    showXAxisNormal = true;                    
-                    }
-                Prefs.set("plot.showXAxisNormal",showXAxisNormal);
-                Prefs.set("plot.showXAxisAsPhase",showXAxisAsPhase);
-                Prefs.set("plot.showXAxisAsDaysSinceTc",showXAxisAsDaysSinceTc);
-                Prefs.set("plot.showXAxisAsHoursSinceTc",showXAxisAsHoursSinceTc);                
-                
-                showXAxisNormalCB = new JRadioButtonMenuItem("Show x-axis unphased", showXAxisNormal);
-                showXAxisNormalCB.addActionListener(new ActionListener(){
-                        public void actionPerformed(ActionEvent ae) {
-                        showXAxisNormal = true;
-                        showXAxisAsPhase = false;
-                        showXAxisAsDaysSinceTc = false;
-                        showXAxisAsHoursSinceTc = false;
-                        Prefs.set("plot.showXAxisNormal",showXAxisNormal);
-                        Prefs.set("plot.showXAxisAsPhase",showXAxisAsPhase);
-                        Prefs.set("plot.showXAxisAsDaysSinceTc",showXAxisAsDaysSinceTc);
-                        Prefs.set("plot.showXAxisAsHoursSinceTc",showXAxisAsHoursSinceTc);
-                        updatePlot(updateAllFits());}});
-                xaxismenu.add(showXAxisNormalCB);
-                
-                showXAxisAsPhaseCB = new JRadioButtonMenuItem("Show x-axis as orbital phase", showXAxisAsPhase);
-                showXAxisAsPhaseCB.addActionListener(new ActionListener(){
-                        public void actionPerformed(ActionEvent ae) {
-                        showXAxisNormal = false;
-                        showXAxisAsPhase = true;
-                        showXAxisAsDaysSinceTc = false;
-                        showXAxisAsHoursSinceTc = false;
-                        Prefs.set("plot.showXAxisNormal",showXAxisNormal);
-                        Prefs.set("plot.showXAxisAsPhase",showXAxisAsPhase);
-                        Prefs.set("plot.showXAxisAsDaysSinceTc",showXAxisAsDaysSinceTc);
-                        Prefs.set("plot.showXAxisAsHoursSinceTc",showXAxisAsHoursSinceTc);
-                        updatePlot(updateAllFits());}});
-                xaxismenu.add(showXAxisAsPhaseCB);
-                
-                showXAxisAsDaysSinceTcCB = new JRadioButtonMenuItem("Show x-axis as days since Tc", showXAxisAsDaysSinceTc);
-                showXAxisAsDaysSinceTcCB.addActionListener(new ActionListener(){
-                        public void actionPerformed(ActionEvent ae) {
-                        showXAxisNormal = false;
-                        showXAxisAsPhase = false;
-                        showXAxisAsDaysSinceTc = true;
-                        showXAxisAsHoursSinceTc = false;
-                        Prefs.set("plot.showXAxisNormal",showXAxisNormal);
-                        Prefs.set("plot.showXAxisAsPhase",showXAxisAsPhase);
-                        Prefs.set("plot.showXAxisAsDaysSinceTc",showXAxisAsDaysSinceTc);
-                        Prefs.set("plot.showXAxisAsHoursSinceTc",showXAxisAsHoursSinceTc);
-                        updatePlot(updateAllFits());}});
-                xaxismenu.add(showXAxisAsDaysSinceTcCB);                
-                
-                showXAxisAsHoursSinceTcCB = new JRadioButtonMenuItem("Show x-axis as hours since Tc", showXAxisAsHoursSinceTc);
-                showXAxisAsHoursSinceTcCB.addActionListener(new ActionListener(){
-                        public void actionPerformed(ActionEvent ae) {
-                        showXAxisNormal = false;
-                        showXAxisAsPhase = false;
-                        showXAxisAsDaysSinceTc = false;
-                        showXAxisAsHoursSinceTc = true;
-                        Prefs.set("plot.showXAxisNormal",showXAxisNormal);
-                        Prefs.set("plot.showXAxisAsPhase",showXAxisAsPhase);
-                        Prefs.set("plot.showXAxisAsDaysSinceTc",showXAxisAsDaysSinceTc);
-                        Prefs.set("plot.showXAxisAsHoursSinceTc",showXAxisAsHoursSinceTc);
-                        updatePlot(updateAllFits());}});
-                xaxismenu.add(showXAxisAsHoursSinceTcCB);     
-                
-                xPhaseGroup = new ButtonGroup();
-                xPhaseGroup.add(showXAxisNormalCB);
-                xPhaseGroup.add(showXAxisAsPhaseCB);
-                xPhaseGroup.add(showXAxisAsDaysSinceTcCB);
-                xPhaseGroup.add(showXAxisAsHoursSinceTcCB);
-                
-                xaxismenu.addSeparator();
-
-                setephemerismenuitem = new JMenuItem("Set epoch and period for X-axis phase calculation...");
-                setephemerismenuitem.addActionListener(new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                            setEphemeris();
-                            updatePlot(updateAllFits());
-                            }});
-                xaxismenu.add(setephemerismenuitem);
+//                xaxismenu.addSeparator();
+//
+//                if (showXAxisNormal)
+//                    {
+//                    showXAxisAsPhase = false;
+//                    showXAxisAsDaysSinceTc = false;
+//                    showXAxisAsHoursSinceTc = false; 
+//                    }
+//                else if (showXAxisAsPhase)
+//                    {
+//                    showXAxisAsDaysSinceTc = false;
+//                    showXAxisAsHoursSinceTc = false;                    
+//                    }
+//                else if (showXAxisAsDaysSinceTc)
+//                    {
+//                    showXAxisAsHoursSinceTc = false;                    
+//                    }
+//                else if (!showXAxisAsHoursSinceTc)
+//                    {
+//                    showXAxisNormal = true;                    
+//                    }
+//                Prefs.set("plot.showXAxisNormal",showXAxisNormal);
+//                Prefs.set("plot.showXAxisAsPhase",showXAxisAsPhase);
+//                Prefs.set("plot.showXAxisAsDaysSinceTc",showXAxisAsDaysSinceTc);
+//                Prefs.set("plot.showXAxisAsHoursSinceTc",showXAxisAsHoursSinceTc);                
+//                
+//                showXAxisNormalCB = new JRadioButtonMenuItem("Show x-axis unphased", showXAxisNormal);
+//                showXAxisNormalCB.addActionListener(new ActionListener(){
+//                        public void actionPerformed(ActionEvent ae) {
+//                        showXAxisNormal = true;
+//                        showXAxisAsPhase = false;
+//                        showXAxisAsDaysSinceTc = false;
+//                        showXAxisAsHoursSinceTc = false;
+//                        Prefs.set("plot.showXAxisNormal",showXAxisNormal);
+//                        Prefs.set("plot.showXAxisAsPhase",showXAxisAsPhase);
+//                        Prefs.set("plot.showXAxisAsDaysSinceTc",showXAxisAsDaysSinceTc);
+//                        Prefs.set("plot.showXAxisAsHoursSinceTc",showXAxisAsHoursSinceTc);
+//                        updatePlot(updateAllFits());}});
+//                xaxismenu.add(showXAxisNormalCB);
+//                
+//                showXAxisAsPhaseCB = new JRadioButtonMenuItem("Show x-axis as orbital phase", showXAxisAsPhase);
+//                showXAxisAsPhaseCB.addActionListener(new ActionListener(){
+//                        public void actionPerformed(ActionEvent ae) {
+//                        showXAxisNormal = false;
+//                        showXAxisAsPhase = true;
+//                        showXAxisAsDaysSinceTc = false;
+//                        showXAxisAsHoursSinceTc = false;
+//                        Prefs.set("plot.showXAxisNormal",showXAxisNormal);
+//                        Prefs.set("plot.showXAxisAsPhase",showXAxisAsPhase);
+//                        Prefs.set("plot.showXAxisAsDaysSinceTc",showXAxisAsDaysSinceTc);
+//                        Prefs.set("plot.showXAxisAsHoursSinceTc",showXAxisAsHoursSinceTc);
+//                        updatePlot(updateAllFits());}});
+//                xaxismenu.add(showXAxisAsPhaseCB);
+//                
+//                showXAxisAsDaysSinceTcCB = new JRadioButtonMenuItem("Show x-axis as days since Tc", showXAxisAsDaysSinceTc);
+//                showXAxisAsDaysSinceTcCB.addActionListener(new ActionListener(){
+//                        public void actionPerformed(ActionEvent ae) {
+//                        showXAxisNormal = false;
+//                        showXAxisAsPhase = false;
+//                        showXAxisAsDaysSinceTc = true;
+//                        showXAxisAsHoursSinceTc = false;
+//                        Prefs.set("plot.showXAxisNormal",showXAxisNormal);
+//                        Prefs.set("plot.showXAxisAsPhase",showXAxisAsPhase);
+//                        Prefs.set("plot.showXAxisAsDaysSinceTc",showXAxisAsDaysSinceTc);
+//                        Prefs.set("plot.showXAxisAsHoursSinceTc",showXAxisAsHoursSinceTc);
+//                        updatePlot(updateAllFits());}});
+//                xaxismenu.add(showXAxisAsDaysSinceTcCB);                
+//                
+//                showXAxisAsHoursSinceTcCB = new JRadioButtonMenuItem("Show x-axis as hours since Tc", showXAxisAsHoursSinceTc);
+//                showXAxisAsHoursSinceTcCB.addActionListener(new ActionListener(){
+//                        public void actionPerformed(ActionEvent ae) {
+//                        showXAxisNormal = false;
+//                        showXAxisAsPhase = false;
+//                        showXAxisAsDaysSinceTc = false;
+//                        showXAxisAsHoursSinceTc = true;
+//                        Prefs.set("plot.showXAxisNormal",showXAxisNormal);
+//                        Prefs.set("plot.showXAxisAsPhase",showXAxisAsPhase);
+//                        Prefs.set("plot.showXAxisAsDaysSinceTc",showXAxisAsDaysSinceTc);
+//                        Prefs.set("plot.showXAxisAsHoursSinceTc",showXAxisAsHoursSinceTc);
+//                        updatePlot(updateAllFits());}});
+//                xaxismenu.add(showXAxisAsHoursSinceTcCB);     
+//                
+//                xPhaseGroup = new ButtonGroup();
+//                xPhaseGroup.add(showXAxisNormalCB);
+//                xPhaseGroup.add(showXAxisAsPhaseCB);
+//                xPhaseGroup.add(showXAxisAsDaysSinceTcCB);
+//                xPhaseGroup.add(showXAxisAsHoursSinceTcCB);
+//                
+//                xaxismenu.addSeparator();
+//
+//                setephemerismenuitem = new JMenuItem("Set epoch and period for X-axis phase calculation...");
+//                setephemerismenuitem.addActionListener(new ActionListener() {
+//                    public void actionPerformed(ActionEvent e) {
+//                            setEphemeris();
+//                            updatePlot(updateAllFits());
+//                            }});
+//                xaxismenu.add(setephemerismenuitem);
 
 //                xaxismenu.addSeparator();
                 
@@ -8963,7 +9097,12 @@ static void initializeVariables()
                 vmarker1spinner.setToolTipText("<html>"+"Enter vertical marker 1 x-axis location"+"<br>"+
                     "or enter UT time in HH:MM or HH:MM:SS format and press 'Enter'"+"<br>"+
                     "---------------------------------------------"+"<br>"+
-                    "Right click to set spinner stepsize"+"</html>");
+                    "For a predicted ingress time that occurs in the day prior<br>" +
+                    "to the first data point, enter the time as a negative value.<br>" +
+                    "If the first data point is at 0.2 and the predicted ingress is at 0.95 the day before, then enter -0.05.<br>"+
+                    "---------------------------------------------"+"<br>"+
+                    "Right click to set spinner stepsize<br>");
+
                 vmarker1spinner.addChangeListener (new ChangeListener()
                     {
                     public void stateChanged(ChangeEvent ev)
@@ -10764,6 +10903,452 @@ static void initializeVariables()
                 SpringUtil.makeCompactGrid (mainpanelgroupe, 1, 3, 0,0,0,0);
                 mainpanel.add(mainpanelgroupe);
                 
+       // MAIN PANEL PHASE FOLDING PANEL START
+                
+                T0steppopup = new JPopupMenu();
+                JPanel T0steppanel = new JPanel();
+                T0stepspinnermodel = new SpinnerListModel(spinnerscalelist);
+                T0stepspinner = new JSpinner(T0stepspinnermodel);
+                T0stepspinner.setValue(convertToText(T0Step));
+                T0stepspinner.addChangeListener (new ChangeListener()
+                    {
+                    public void stateChanged(ChangeEvent ev)
+                        {
+                        double value = IJU.getTextSpinnerDoubleValue(T0stepspinner);
+                        if (Double.isNaN(value)) return;
+                        T0Step = value;
+                        T0spinner.setModel(new SpinnerNumberModel(new Double(T0), 0.0, null, new Double(T0Step)));
+                        T0spinner.setEditor(new JSpinner.NumberEditor(T0spinner,   "########0.######"));
+                        Prefs.set("plot.T0Step",T0Step);
+                        }
+                    });
+
+                JLabel T0steplabel = new JLabel ("Stepsize:");
+                T0steppanel.add(T0steplabel);
+                T0steppanel.add(T0stepspinner);
+                T0steppopup.add(T0steppanel);
+                T0steppopup.setLightWeightPopupEnabled(false);
+                T0steppopup.addPopupMenuListener (new PopupMenuListener()
+                    {
+                    public void popupMenuCanceled(PopupMenuEvent popupMenuEvent) {
+                            T0steppopup.setVisible(false);
+                            }
+
+                    public void popupMenuWillBecomeInvisible(PopupMenuEvent popupMenuEvent) {
+                            T0steppopup.setVisible(true);
+                            }
+
+                    public void popupMenuWillBecomeVisible(PopupMenuEvent popupMenuEvent) {
+                            T0steppopup.setVisible(false);
+                            }
+                    });
+                
+                
+                
+                periodsteppopup = new JPopupMenu();
+                JPanel periodsteppanel = new JPanel();
+                periodstepspinnermodel = new SpinnerListModel(spinnerscalelist);
+                periodstepspinner = new JSpinner(periodstepspinnermodel);
+                periodstepspinner.setValue(convertToText(periodStep));
+                periodstepspinner.addChangeListener (new ChangeListener()
+                    {
+                    public void stateChanged(ChangeEvent ev)
+                        {
+                        double value = IJU.getTextSpinnerDoubleValue(periodstepspinner);
+                        if (Double.isNaN(value)) return;
+                        periodStep = value;
+                        periodspinner.setModel(new SpinnerNumberModel(new Double(period), 0.0001, null, new Double(periodStep)));
+                        periodspinner.setEditor(new JSpinner.NumberEditor(periodspinner,   "########0.######"));
+                        Prefs.set("plot.periodStep",periodStep);
+                        }
+                    });
+
+                JLabel periodsteplabel = new JLabel ("Stepsize:");
+                periodsteppanel.add(periodsteplabel);
+                periodsteppanel.add(periodstepspinner);
+                periodsteppopup.add(periodsteppanel);
+                periodsteppopup.setLightWeightPopupEnabled(false);
+                periodsteppopup.addPopupMenuListener (new PopupMenuListener()
+                    {
+                    public void popupMenuCanceled(PopupMenuEvent popupMenuEvent) {
+                            periodsteppopup.setVisible(false);
+                            }
+
+                    public void popupMenuWillBecomeInvisible(PopupMenuEvent popupMenuEvent) {
+                            periodsteppopup.setVisible(true);
+                            }
+
+                    public void popupMenuWillBecomeVisible(PopupMenuEvent popupMenuEvent) {
+                            periodsteppopup.setVisible(false);
+                            }
+                    });
+                
+                durationsteppopup = new JPopupMenu();
+                JPanel durationsteppanel = new JPanel();
+                durationstepspinnermodel = new SpinnerListModel(spinnerscalelist);
+                durationstepspinner = new JSpinner(durationstepspinnermodel);
+                durationstepspinner.setValue(convertToText(durationStep));
+                durationstepspinner.addChangeListener (new ChangeListener()
+                    {
+                    public void stateChanged(ChangeEvent ev)
+                        {
+                        double value = IJU.getTextSpinnerDoubleValue(durationstepspinner);
+                        if (Double.isNaN(value)) return;
+                        durationStep = value;
+                        durationspinner.setModel(new SpinnerNumberModel(new Double(duration), 0.0, null, new Double(durationStep)));
+                        durationspinner.setEditor(new JSpinner.NumberEditor(durationspinner,   "########0.######"));
+                        Prefs.set("plot.durationStep",durationStep);
+                        }
+                    });
+
+                JLabel durationsteplabel = new JLabel ("Stepsize:");
+                durationsteppanel.add(durationsteplabel);
+                durationsteppanel.add(durationstepspinner);
+                durationsteppopup.add(durationsteppanel);
+                durationsteppopup.setLightWeightPopupEnabled(false);
+                durationsteppopup.addPopupMenuListener (new PopupMenuListener()
+                    {
+                    public void popupMenuCanceled(PopupMenuEvent popupMenuEvent) {
+                            durationsteppopup.setVisible(false);
+                            }
+
+                    public void popupMenuWillBecomeInvisible(PopupMenuEvent popupMenuEvent) {
+                            durationsteppopup.setVisible(true);
+                            }
+
+                    public void popupMenuWillBecomeVisible(PopupMenuEvent popupMenuEvent) {
+                            durationsteppopup.setVisible(false);
+                            }
+                    });
+       
+                JPanel phasefoldpanel = new JPanel (new SpringLayout());
+                TitledBorder phasefoldborder = BorderFactory.createTitledBorder(BorderFactory.createLineBorder(mainBorderColor, 1),"Phase Folding", TitledBorder.CENTER, TitledBorder.TOP, b12, Color.DARK_GRAY);
+                phasefoldpanel.setBorder(phasefoldborder);
+
+                unphasedButton = new JRadioButton("Unphased");
+                unphasedButton.setFont(p11);
+                unphasedButton.setHorizontalAlignment(JLabel.CENTER);
+                dayssincetcButton = new JRadioButton("Days Since Tc");
+                dayssincetcButton.setFont(p11);
+                dayssincetcButton.setHorizontalAlignment(JLabel.CENTER);
+                hourssincetcButton = new JRadioButton("Hours Since Tc");
+                hourssincetcButton.setFont(p11);
+                hourssincetcButton.setHorizontalAlignment(JLabel.CENTER);
+                orbitalphaseButton = new JRadioButton("Phase");
+                orbitalphaseButton.setFont(p11);
+                orbitalphaseButton.setHorizontalAlignment(JLabel.CENTER);
+
+                if (showXAxisNormal)
+                        {
+                        unphasedButton.setSelected(true);
+                        dayssincetcButton.setSelected(false);
+                        hourssincetcButton.setSelected(false);
+                        orbitalphaseButton.setSelected(false);
+                        Prefs.set("plot.showXAxisNormal", showXAxisNormal);
+                        }
+                else if (showXAxisAsDaysSinceTc)
+                        {
+                        unphasedButton.setSelected(false);
+                        dayssincetcButton.setSelected(true);
+                        hourssincetcButton.setSelected(false);
+                        orbitalphaseButton.setSelected(false);
+                        }
+                else if (showXAxisAsHoursSinceTc)
+                        {
+                        unphasedButton.setSelected(false);
+                        dayssincetcButton.setSelected(false);
+                        hourssincetcButton.setSelected(true);
+                        orbitalphaseButton.setSelected(false);
+                        }
+                else
+                        {
+                        unphasedButton.setSelected(false);
+                        dayssincetcButton.setSelected(false);
+                        hourssincetcButton.setSelected(false);
+                        orbitalphaseButton.setSelected(true);
+                        }
+
+                phasefoldpanel.add (unphasedButton);
+                phasefoldpanel.add (dayssincetcButton);
+                phasefoldpanel.add (hourssincetcButton);
+                phasefoldpanel.add (orbitalphaseButton);
+
+                ButtonGroup phaseradiogroup = new ButtonGroup();
+                        phaseradiogroup.add(unphasedButton);
+                        phaseradiogroup.add(dayssincetcButton);
+                        phaseradiogroup.add(hourssincetcButton);
+                        phaseradiogroup.add(orbitalphaseButton);
+                unphasedButton.addActionListener(new ActionListener(){
+                    public void actionPerformed(ActionEvent ae) {
+                        showXAxisNormal = true;
+                        showXAxisAsDaysSinceTc = false;
+                        showXAxisAsHoursSinceTc = false;
+                        showXAxisAsPhase = false;
+                        T0spinner.setEnabled(false);
+                        periodspinner.setEnabled(false);
+                        durationspinner.setEnabled(false);
+                        twoxPeriodCB.setEnabled(false);
+                        oddNotEvenCB.setEnabled(false);
+                        t0panel.setEnabled(false);
+                        periodpanel.setEnabled(false);
+                        durationpanel.setEnabled(false);
+                        Prefs.set("plot.showXAxisNormal", showXAxisNormal);
+                        Prefs.set("plot.showXAxisAsPhase", showXAxisAsPhase);
+                        Prefs.set("plot.showXAxisAsHoursSinceTc", showXAxisAsHoursSinceTc);
+                        Prefs.set("plot.showXAxisAsDaysSinceTc", showXAxisAsDaysSinceTc);
+                        updatePlot(updateAllFits());}});
+                dayssincetcButton.addActionListener(new ActionListener(){
+                    public void actionPerformed(ActionEvent ae) {
+                        showXAxisNormal = false;
+                        showXAxisAsDaysSinceTc = true;
+                        showXAxisAsHoursSinceTc = false;
+                        showXAxisAsPhase = false;
+                        vMarker1Value = -duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) vmarker1spinner.setValue((Double)vMarker1Value);
+                        vMarker2Value =  duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) vmarker2spinner.setValue((Double)vMarker2Value);
+                        dMarker2Value = -duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) dmarker2spinner.setValue((Double)dMarker2Value);
+                        dMarker3Value =  duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) dmarker3spinner.setValue((Double)dMarker3Value);
+                        t0panel.setEnabled(true);
+                        periodpanel.setEnabled(true);
+                        durationpanel.setEnabled(true);
+                        T0spinner.setEnabled(true);
+                        periodspinner.setEnabled(true);
+                        durationspinner.setEnabled(true);
+                        twoxPeriodCB.setEnabled(true);
+                        if (twoxPeriod)
+                            oddNotEvenCB.setEnabled(true);
+                        else
+                            oddNotEvenCB.setEnabled(false);
+                        Prefs.set("plot.showXAxisNormal", showXAxisNormal);
+                        Prefs.set("plot.showXAxisAsPhase", showXAxisAsPhase);
+                        Prefs.set("plot.showXAxisAsHoursSinceTc", showXAxisAsHoursSinceTc);
+                        Prefs.set("plot.showXAxisAsDaysSinceTc", showXAxisAsDaysSinceTc);
+                        updatePlot(updateAllFits());}});
+                hourssincetcButton.addActionListener(new ActionListener(){
+                    public void actionPerformed(ActionEvent ae) {
+                        showXAxisNormal = false;
+                        showXAxisAsDaysSinceTc = false;
+                        showXAxisAsHoursSinceTc = true;
+                        showXAxisAsPhase = false;
+                        t0panel.setEnabled(true);
+                        periodpanel.setEnabled(true);
+                        durationpanel.setEnabled(true);
+                        T0spinner.setEnabled(true);
+                        periodspinner.setEnabled(true);
+                        durationspinner.setEnabled(true);
+                        twoxPeriodCB.setEnabled(true);
+                        if (twoxPeriod)
+                            oddNotEvenCB.setEnabled(true);
+                        else
+                            oddNotEvenCB.setEnabled(false);
+                        vMarker1Value = -duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) vmarker1spinner.setValue((Double)vMarker1Value);
+                        vMarker2Value =  duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) vmarker2spinner.setValue((Double)vMarker2Value);
+                        dMarker2Value = -duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) dmarker2spinner.setValue((Double)dMarker2Value);
+                        dMarker3Value =  duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) dmarker3spinner.setValue((Double)dMarker3Value);
+                        Prefs.set("plot.showXAxisNormal", showXAxisNormal);
+                        Prefs.set("plot.showXAxisAsPhase", showXAxisAsPhase);
+                        Prefs.set("plot.showXAxisAsHoursSinceTc", showXAxisAsHoursSinceTc);
+                        Prefs.set("plot.showXAxisAsDaysSinceTc", showXAxisAsDaysSinceTc);
+                        updatePlot(updateAllFits());}});                
+                orbitalphaseButton.addActionListener(new ActionListener(){
+                    public void actionPerformed(ActionEvent ae) {
+                        showXAxisNormal = false;
+                        showXAxisAsDaysSinceTc = false;
+                        showXAxisAsHoursSinceTc = false;
+                        showXAxisAsPhase = true;
+                        t0panel.setEnabled(true);
+                        periodpanel.setEnabled(true);
+                        durationpanel.setEnabled(true);
+                        T0spinner.setEnabled(true);
+                        periodspinner.setEnabled(true);
+                        durationspinner.setEnabled(true);
+                        twoxPeriodCB.setEnabled(true);
+                        if (twoxPeriod)
+                            oddNotEvenCB.setEnabled(true);
+                        else
+                            oddNotEvenCB.setEnabled(false);
+                        vMarker1Value = -duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) vmarker1spinner.setValue((Double)vMarker1Value);
+                        vMarker2Value =  duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) vmarker2spinner.setValue((Double)vMarker2Value);
+                        dMarker2Value = -duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) dmarker2spinner.setValue((Double)dMarker2Value);
+                        dMarker3Value =  duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) dmarker3spinner.setValue((Double)dMarker3Value);
+                        Prefs.set("plot.showXAxisNormal", showXAxisNormal);
+                        Prefs.set("plot.showXAxisAsPhase", showXAxisAsPhase);
+                        Prefs.set("plot.showXAxisAsHoursSinceTc", showXAxisAsHoursSinceTc);
+                        Prefs.set("plot.showXAxisAsDaysSinceTc", showXAxisAsDaysSinceTc);
+                        updatePlot(updateAllFits());}});
+                
+
+                
+                t0panel = new JPanel(new SpringLayout());
+                TitledBorder t0border = BorderFactory.createTitledBorder(BorderFactory.createLineBorder(subBorderColor, 1),"T0 (Days)", TitledBorder.CENTER, TitledBorder.TOP, p11);
+                t0panel.setBorder(t0border);    
+                
+                T0spinnermodel = new SpinnerNumberModel(new Double(T0),  0.0, null, new Double(T0Step));
+
+                T0spinner = new JSpinner(T0spinnermodel);
+                T0spinner.setFont(p11);
+                T0spinner.setEditor(new JSpinner.NumberEditor(T0spinner, "########0.######"));
+                T0spinner.setPreferredSize(new Dimension(100, 25));
+                T0spinner.setEnabled(true);
+                T0spinner.setComponentPopupMenu(T0steppopup);
+                T0spinner.setToolTipText("<html>"+"Phase folding reference epoch (days)"+"</html>");
+                T0spinner.addChangeListener (new ChangeListener()
+                    {
+                    public void stateChanged(ChangeEvent ev)
+                        {
+                        T0 = ((Double)T0spinner.getValue()).doubleValue();
+                        if (T0 < 0) T0 = 2450000;
+                        if (T0 < 8000.0) T0spinner.setValue((Double)(T0+2457000.0));
+                        Prefs.set("plot.T0", T0);
+                        updatePlot(updateAllFits());
+                        }
+                    });
+                T0spinner.addMouseWheelListener( new MouseWheelListener()
+                    {
+                    public void mouseWheelMoved( MouseWheelEvent e )
+                        {
+                        T0spinner.setValue(((Double)T0spinner.getValue()).doubleValue()
+                                - e.getWheelRotation()*T0Step );
+                        }
+                    });
+                t0panel.add (T0spinner);
+                SpringUtil.makeCompactGrid (t0panel, 1, t0panel.getComponentCount(), 0,0,0,0);
+                phasefoldpanel.add(t0panel);
+                
+                periodpanel = new JPanel(new SpringLayout());
+                TitledBorder periodborder = BorderFactory.createTitledBorder(BorderFactory.createLineBorder(subBorderColor, 1),"Period (Days)", TitledBorder.CENTER, TitledBorder.TOP, p11);
+                periodpanel.setBorder(periodborder);    
+                
+                periodspinnermodel = new SpinnerNumberModel(new Double(period),  0.0001, null, new Double(periodStep));
+
+                periodspinner = new JSpinner(periodspinnermodel);
+                periodspinner.setFont(p11);
+                periodspinner.setEditor(new JSpinner.NumberEditor(periodspinner, "########0.######"));
+                periodspinner.setPreferredSize(new Dimension(100, 25));
+                periodspinner.setEnabled(true);
+                periodspinner.setComponentPopupMenu(periodsteppopup);
+                periodspinner.setToolTipText("<html>"+"Phase folding reference epoch (days)"+"</html>");
+                periodspinner.addChangeListener (new ChangeListener()
+                    {
+                    public void stateChanged(ChangeEvent ev)
+                        {
+                        period = ((Double)periodspinner.getValue()).doubleValue();
+                        if (period < 0.0001) period = 0.0001;
+                        Prefs.set("plot.period", period);
+                        updatePlot(updateAllFits());
+                        }
+                    });
+                periodspinner.addMouseWheelListener( new MouseWheelListener()
+                    {
+                    public void mouseWheelMoved( MouseWheelEvent e )
+                        {
+                        periodspinner.setValue(((Double)periodspinner.getValue()).doubleValue()
+                                - e.getWheelRotation()*periodStep );
+                        }
+                    });
+                periodpanel.add (periodspinner);
+                SpringUtil.makeCompactGrid (periodpanel, 1, periodpanel.getComponentCount(), 0,0,0,0);
+                phasefoldpanel.add(periodpanel);
+                
+                durationpanel = new JPanel(new SpringLayout());
+                TitledBorder durationborder = BorderFactory.createTitledBorder(BorderFactory.createLineBorder(subBorderColor, 1),"Duration (Hours)", TitledBorder.CENTER, TitledBorder.TOP, p11);
+                durationpanel.setBorder(durationborder);    
+                
+                durationspinnermodel = new SpinnerNumberModel(new Double(duration),  0.0, null, new Double(durationStep));
+
+                durationspinner = new JSpinner(durationspinnermodel);
+                durationspinner.setFont(p11);
+                durationspinner.setEditor(new JSpinner.NumberEditor(durationspinner, "########0.######"));
+                durationspinner.setPreferredSize(new Dimension(100, 25));
+                durationspinner.setEnabled(true);
+                durationspinner.setComponentPopupMenu(durationsteppopup);
+                durationspinner.setToolTipText("<html>"+"Phase folding reference epoch (days)"+"</html>");
+                durationspinner.addChangeListener (new ChangeListener()
+                    {
+                    public void stateChanged(ChangeEvent ev)
+                        {
+                        duration = ((Double)durationspinner.getValue()).doubleValue();
+                        if (duration < 0) duration = 0.0;
+                        Prefs.set("plot.duration", duration);
+                        vMarker1Value = -duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) vmarker1spinner.setValue((Double)vMarker1Value);
+                        vMarker2Value =  duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) vmarker2spinner.setValue((Double)vMarker2Value);
+                        dMarker2Value = -duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) dmarker2spinner.setValue((Double)dMarker2Value);
+                        dMarker3Value =  duration/48.0;
+                        if (vmarker1spinner != null && !showXAxisNormal) dmarker3spinner.setValue((Double)dMarker3Value);
+                        updatePlot(updateAllFits());
+                        }
+                    });
+                durationspinner.addMouseWheelListener( new MouseWheelListener()
+                    {
+                    public void mouseWheelMoved( MouseWheelEvent e )
+                        {
+                        durationspinner.setValue(((Double)durationspinner.getValue()).doubleValue()
+                                - e.getWheelRotation()*durationStep );
+                        }
+                    });
+                durationpanel.add (durationspinner);
+                
+                SpringUtil.makeCompactGrid (durationpanel, 1, durationpanel.getComponentCount(), 0,0,0,0);
+                phasefoldpanel.add(durationpanel);
+                
+                twoxPeriodCB = new JCheckBox ("2xP", twoxPeriod);
+                twoxPeriodCB.setToolTipText("Show at 2 x Period to check odd/even.");
+                twoxPeriodCB.addItemListener(new ItemListener(){
+                    public void itemStateChanged(ItemEvent e) {
+                        if (e.getStateChange() == ItemEvent.DESELECTED)
+                                twoxPeriod = false;
+                        else if (e.getStateChange() == ItemEvent.SELECTED)
+                                twoxPeriod = true;
+                        oddNotEvenCB.setEnabled(twoxPeriod);
+                        Prefs.set("plot.twoxPeriod", twoxPeriod);
+                        updatePlot(updateAllFits());}});
+                phasefoldpanel.add (twoxPeriodCB);
+                
+                oddNotEvenCB = new JCheckBox ("odd/even", oddNotEven);
+                oddNotEvenCB.setToolTipText("Select to show odd transits. Deselect to show even transits.");
+                oddNotEvenCB.addItemListener(new ItemListener(){
+                    public void itemStateChanged(ItemEvent e) {
+                        if (e.getStateChange() == ItemEvent.DESELECTED)
+                                oddNotEven = false;
+                        else if (e.getStateChange() == ItemEvent.SELECTED)
+                                oddNotEven = true;
+                        Prefs.set("plot.oddNotEven", oddNotEven);
+                        updatePlot(updateAllFits());}});
+                phasefoldpanel.add (oddNotEvenCB);
+                
+                if (showXAxisNormal)
+                    {
+                    T0spinner.setEnabled(false);
+                    periodspinner.setEnabled(false);
+                    durationspinner.setEnabled(false);
+                    twoxPeriodCB.setEnabled(false);
+                    oddNotEvenCB.setEnabled(false);
+                    t0panel.setEnabled(false);
+                    periodpanel.setEnabled(false);
+                    durationpanel.setEnabled(false);
+                    }
+                if (!twoxPeriod)
+                    {
+                    oddNotEvenCB.setEnabled(false);
+                    }
+                
+                SpringUtil.makeCompactGrid (phasefoldpanel, 1, phasefoldpanel.getComponentCount(), 2,2,0,0);
+                mainpanel.add(phasefoldpanel);
+                
         // MAIN PANEL GROUP F START
 
                 
@@ -10970,6 +11555,16 @@ static void initializeVariables()
                         {
                         checkForUT(dmarker2spinner);
                         dMarker2Value = ((Double)dmarker2spinner.getValue()).doubleValue();
+                        
+//                        if (shiftIsDown && !ignoreUpdate)
+//                            {
+//                            ignoreUpdate = true;
+//                            dmarker3spinner.setValue((Double)(dMarker3Value + Math.abs(vMarker2Value-vMarker1Value)));
+//                            }
+//                        else
+//                            {
+//                            ignoreUpdate = false;
+//                            }
                         keepMarkersInOrder(2);
                         updatePlot(updateAllFits());
                         }
@@ -10980,6 +11575,11 @@ static void initializeVariables()
                         {
                         dmarker2spinner.setValue(((Double)dmarker2spinner.getValue()).doubleValue()
                                 - e.getWheelRotation()*xStep );
+                        if (e.isShiftDown() || e.isControlDown() || e.isAltDown())
+                            {
+                            dmarker3spinner.setValue(((Double)dmarker3spinner.getValue()).doubleValue()
+                                - e.getWheelRotation()*xStep );
+                            }
                         }
                     });
                 dmarker2panel.add (dmarker2spinner);
@@ -11032,12 +11632,43 @@ static void initializeVariables()
                     "SHORTCUT: &lt;Ctrl&gt; Right Click or Drag in plot   "+"<br>"+
                     "---------------------------------------------"+"<br>"+
                     "Right click to set spinner stepsize"+"</html>");
+                dmarker3spinner.addMouseListener(new MouseListener()
+                    {
+                    public void mouseClicked(MouseEvent e) {
+                    }
+                    public void mousePressed(MouseEvent e) {
+                        if (e.isAltDown()) shiftIsDown = true;
+                        //else shiftIsDown = false;
+                            
+                    }
+                    public void mouseReleased(MouseEvent e) {
+                        if (e.isAltDown()) shiftIsDown = true;
+                        //else shiftIsDown = false;
+                                
+                    }
+                    public void mouseExited(MouseEvent e) {
+                    }
+                    public void mouseEntered(MouseEvent e) {
+                        //if (e.isAltDown()) shiftIsDown = true;
+                    }
+                    });
                 dmarker3spinner.addChangeListener (new ChangeListener()
                     {
                     public void stateChanged(ChangeEvent ev)
                         {
                         checkForUT(dmarker3spinner);
                         dMarker3Value = ((Double)dmarker3spinner.getValue()).doubleValue();
+//                        IJ.log("D3 Shift="+shiftIsDown);
+//                        IJ.log("D3 IgnoreUpdate="+ignoreUpdate);
+//                        if (shiftIsDown && !ignoreUpdate)
+//                            {
+//                            dmarker2spinner.setValue((Double)(dMarker2Value + Math.abs(vMarker2Value-vMarker1Value)));
+//                            ignoreUpdate = true;
+//                            }
+//                        else
+//                            {
+//                            ignoreUpdate = false;
+//                            }
                         keepMarkersInOrder(3);
                         updatePlot(updateAllFits());
                         }
@@ -11048,6 +11679,11 @@ static void initializeVariables()
                         {
                         dmarker3spinner.setValue(((Double)dmarker3spinner.getValue()).doubleValue()
                                 - e.getWheelRotation()*xStep );
+                        if (e.isShiftDown() || e.isControlDown() || e.isAltDown())
+                            {
+                            dmarker2spinner.setValue(((Double)dmarker2spinner.getValue()).doubleValue()
+                                - e.getWheelRotation()*xStep );
+                            }
                         }
                     });
                 dmarker3panel.add (dmarker3spinner);
@@ -11135,10 +11771,12 @@ static void initializeVariables()
                 morepanelspanel.setBorder(morepanelstitle); 
 //                morepanelspanel.setPreferredSize(new Dimension(125, 25));
                 
-                updateplotbutton = new JButton(" Redraw Plot ");
+                JPanel line1morepanelspanel = new JPanel(new SpringLayout());
+                
+                updateplotbutton = new JButton("Redraw Plot");
                 updateplotbutton.setToolTipText("redraws the plot and brings the panel to the front");
                 updateplotbutton.setFont(p11);
-//                updateplotbutton.setPreferredSize(new Dimension(150, 20));
+                updateplotbutton.setPreferredSize(new Dimension(90, 20));
                 updateplotbutton.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         totalPanOffsetX=0.0;
@@ -11151,14 +11789,36 @@ static void initializeVariables()
                         plotWindow.toFront();
                     }
                 });         
-                morepanelspanel.add (updateplotbutton);
+                line1morepanelspanel.add (updateplotbutton);
+                
+                addastrodatabutton = new JButton(" Add Data ");
+                addastrodatabutton.setToolTipText("Add new astronomical data columns to table.");
+                addastrodatabutton.setFont(p11);
+                addastrodatabutton.setPreferredSize(new Dimension(90, 20));
+                addastrodatabutton.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        if (addAstroDataFrame != null && addAstroDataFrame.isShowing())
+                            addAstroDataFrame.setVisible(true);
+                        else
+                            {
+                            setSubpanelVisible = true;
+                            addNewAstroData();
+                            }
+                        addAstroDataFrameWasShowing = true;
+                        Prefs.set("plot2.addAstroDataFrameWasShowing", addAstroDataFrameWasShowing);
+                    }
+                });         
+                line1morepanelspanel.add (addastrodatabutton);
+                
+                SpringUtil.makeCompactGrid (line1morepanelspanel, 1, line1morepanelspanel.getComponentCount(), 0,0,0,0);
+                morepanelspanel.add (line1morepanelspanel);
                 
                 JPanel line2morepanelspanel = new JPanel(new SpringLayout());                
                                 
-                moreybutton = new JButton("Y-data");
+                moreybutton = new JButton("Y-data ");
                 moreybutton.setToolTipText("opens the Y-data panel");
                 moreybutton.setFont(p11);
-//                moreybutton.setPreferredSize(new Dimension(65, 20));
+                moreybutton.setPreferredSize(new Dimension(90, 20));
                 moreybutton.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         if (subFrame.isShowing())
@@ -11175,7 +11835,7 @@ static void initializeVariables()
                 refStarButton = new JButton("Ref. Stars");
                 refStarButton.setFont(p11);
                 refStarButton.setToolTipText("opens the reference star panel");
-//                refStarButton.setPreferredSize(new Dimension(90, 20));
+                refStarButton.setPreferredSize(new Dimension(90, 20));
                 refStarButton.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         if (refStarFrame != null && refStarFrame.isShowing())
@@ -11207,7 +11867,7 @@ static void initializeVariables()
                 SpringUtil.makeCompactGrid (mainpanelgroupf, 1, mainpanelgroupf.getComponentCount(), 2,0,6,0);
                 mainpanel.add(mainpanelgroupf);
 
-                SpringUtil.makeCompactGrid (mainpanel, 5, 1, 6,6,6,6);
+                SpringUtil.makeCompactGrid (mainpanel, 6, 1, 6,6,6,6);
 
                 mainFrame.setJMenuBar(mainmenubar);
                 mainFrame.add (mainscrollpane);
@@ -11228,7 +11888,7 @@ static void initializeVariables()
                     refStarPanelWasShowing = true;
                     }
                 showMoreCurvesJPanel();
-                if (!plotAutoMode && table != null && (addAstroDataFrameWasShowing))
+                if (!plotAutoMode && (addAstroDataFrameWasShowing)) //table != null &&
                     {
                     addNewAstroData();
                     addAstroDataFrameWasShowing = true;
@@ -11519,13 +12179,21 @@ static void initializeVariables()
                 if (!useWideDataPanel)
                         mainsubpanelgroup.add (seconddatasetlabel);
                 
-                JLabel smoothlabel = new JLabel ("Smooth");
+                JLabel smoothlabel = new JLabel ("<HTML><CENTER>Smo-<BR><CENTER>oth</HTML>");
                 smoothlabel.setFont(b11);
                 smoothlabel.setForeground(Color.DARK_GRAY);
                 smoothlabel.setToolTipText("Smooth long time-series by removing long-term variations");
                 smoothlabel.setHorizontalAlignment(JLabel.CENTER);
-                smoothlabel.setMaximumSize(new Dimension(45,25));
+                smoothlabel.setMaximumSize(new Dimension(35,25));
                 mainsubpanelgroup.add (smoothlabel);
+                
+                JLabel smoothlenlabel = new JLabel ("<HTML><CENTER>Len-<BR><CENTER>gth</HTML>");
+                smoothlenlabel.setFont(b11);
+                smoothlenlabel.setForeground(Color.DARK_GRAY);
+                smoothlenlabel.setToolTipText("Set smoothing length (number data points)");
+                smoothlenlabel.setHorizontalAlignment(JLabel.CENTER);
+                smoothlenlabel.setMaximumSize(new Dimension(35,25));
+                mainsubpanelgroup.add (smoothlenlabel);
                 
                 JPanel detrendlabelgroup = new JPanel (new SpringLayout());
                 detrendlabelgroup.setMaximumSize(new Dimension(195,20));
@@ -12010,6 +12678,33 @@ static void initializeVariables()
                         updatePlot(updateOneFit(c));}});
                 usesmoothbox[c].setHorizontalAlignment(JLabel.CENTER);
                 mainsubpanelgroup.add (usesmoothbox[c]);
+                
+                smoothlenspinnermodel[c] = new SpinnerNumberModel(new Integer(smoothLen[c]),new Integer(1), null, new Integer(1));
+                smoothlenspinner[c] = new JSpinner(smoothlenspinnermodel[c]);
+                smoothlenspinner[c].setFont(p11);
+                smoothlenspinner[c].setMaximumSize(new Dimension(50,25));
+                smoothlenspinner[c].setPreferredSize(new Dimension(50,25));
+                smoothlenspinner[c].addChangeListener (new ChangeListener()
+                    {
+                    public void stateChanged(ChangeEvent ev)
+                        {
+                        smoothLen[c] = ((Integer)smoothlenspinner[c].getValue()).intValue();
+                        Prefs.set("plot.smoothLen"+c,smoothLen[c]);
+                        updatePlot(updateOneFit(c));
+                        }
+                    });
+                smoothlenspinner[c].addMouseWheelListener( new MouseWheelListener()
+                    {
+                    public void mouseWheelMoved( MouseWheelEvent e )
+                        {
+                        int newValue =  new Integer(((Integer)smoothlenspinner[c].getValue()).intValue() - e.getWheelRotation());
+                        if (newValue > 0) smoothlenspinner[c].setValue(newValue);
+                        }
+                    });
+                mainsubpanelgroup.add (smoothlenspinner[c]);             
+                
+                
+                
         //DETREND PANEL GROUP
                 
                 detrendpanelgroup[c] = new JPanel (new SpringLayout());
@@ -15211,7 +15906,14 @@ static void initializeVariables()
                 }
             if (!lockToCenter[c][3] && autoUpdatePrior[c][3])
                 {
-                priorCenterSpinner[c][3].setValue((int)xPlotMinRaw + (dMarker2Value + dMarker3Value)/2.0);   // tc = transit center time            
+                if (showXAxisNormal)
+                    {
+                    priorCenterSpinner[c][3].setValue((int)xPlotMinRaw + (dMarker2Value + dMarker3Value)/2.0);   // tc = transit center time  
+                    }
+                else
+                    {
+                    priorCenterSpinner[c][3].setValue((dMarker2Value + dMarker3Value)/2.0);   // tc = transit center time 
+                    }
                 }
             if (!lockToCenter[c][4] && autoUpdatePrior[c][4])
                 {
@@ -17120,16 +17822,30 @@ static void initializeVariables()
 
             gd.addNumericField ("Reference Epoch: ", T0, 8, 20, "(days)");
             gd.addNumericField ("Orbital Period: ", period, 8, 20, "(days)");
+            gd.addNumericField ("Transit Duration: ", duration, 8, 20, "(hours)");
             gd.addMessage ("");
 
             gd.showDialog();
             if (gd.wasCanceled()) return;
 
             T0 = gd.getNextNumber();
+            if (T0 < 8000.0) T0 += 2457000;
             period = gd.getNextNumber();
+            duration = gd.getNextNumber();
+            vMarker1Value = -duration/48.0;
+            vmarker1spinner.setValue((Double)vMarker1Value);
+            vMarker2Value =  duration/48.0;
+            vmarker2spinner.setValue((Double)vMarker2Value);
+            dMarker2Value = -duration/48.0;
+            dmarker2spinner.setValue((Double)dMarker2Value);
+            dMarker3Value =  duration/48.0;
+            dmarker3spinner.setValue((Double)dMarker3Value);
             Prefs.set("plot.T0", T0);
             Prefs.set("plot.period", period);
+            Prefs.set("plot.duration", duration);
             }        
+        
+    
         
         static void changeMaxDataLength()
             {
@@ -17989,6 +18705,7 @@ static void initializeVariables()
             boolean saveRowNumbers = true;
             boolean saveRowLabels = true;
             maxSubsetColumns=(int)Prefs.get("plot2.maxSubsetColumns", maxSubsetColumns);
+            boolean[] subsetColumnEnable = new boolean[maxSubsetColumns];
             String[] subsetColumn = new String[maxSubsetColumns];
             saveColumnHeadings = Prefs.get("plot2.saveColumnHeadings", saveColumnHeadings);
             saveHeadersAsComment = Prefs.get("plot2.saveHeadersAsComment", saveHeadersAsComment);
@@ -17997,6 +18714,7 @@ static void initializeVariables()
             
             for (int i=0; i<maxSubsetColumns; i++)
                 {
+                subsetColumnEnable[i] = true;
                 subsetColumn[i] = "";
                 }            
             
@@ -18004,6 +18722,7 @@ static void initializeVariables()
 
             for (int i=0; i<maxSubsetColumns; i++)
                 {
+                subsetColumnEnable[i] = Prefs.get("plot2.subsetColumnEnable"+i, subsetColumnEnable[i]);
                 subsetColumn[i] = Prefs.get("plot2.subsetColumn"+i, subsetColumn[i]);
                 }
             
@@ -18019,6 +18738,7 @@ static void initializeVariables()
                 }
             for (int i=0; i<maxSubsetColumns; i++)
                 {
+                gd.addCheckbox("Enable Column "+(i+1), subsetColumnEnable[i]);
                 gd.addChoice("Data Column "+(i+1)+":", saveColumns, subsetColumn[i]);
                 }
              
@@ -18034,6 +18754,7 @@ static void initializeVariables()
             boolean meridianFlipSelected = false;
             for (int i=0; i<maxSubsetColumns; i++)
                 {
+                subsetColumnEnable[i] = gd.getNextBoolean();
                 subsetColumn[i] = gd.getNextChoice();
                 if (subsetColumn[i].equals("Meridian_Flip")) meridianFlipSelected = true;
                 }
@@ -18044,6 +18765,7 @@ static void initializeVariables()
 
             for (int i=0; i<maxSubsetColumns; i++)
                 {
+                Prefs.set("plot2.subsetColumnEnable"+i, subsetColumnEnable[i]);
                 Prefs.set("plot2.subsetColumn"+i, subsetColumn[i]);
                 }            
             Prefs.set("plot2.saveColumnHeadings", saveColumnHeadings);
@@ -18078,9 +18800,11 @@ static void initializeVariables()
             {        
             PrintWriter pw = null;
             maxSubsetColumns=(int)Prefs.get("plot2.maxSubsetColumns", maxSubsetColumns);
+            boolean[] subsetColumnEnable = new boolean[maxSubsetColumns];
             String[] subsetColumn = new String[maxSubsetColumns];
             for (int i=0; i<maxSubsetColumns; i++)
                 {
+                subsetColumnEnable[i] = Prefs.get("plot2.subsetColumnEnable"+i, subsetColumnEnable[i]);
                 subsetColumn[i] = Prefs.get("plot2.subsetColumn"+i, "");
                 }            
             boolean saveColumnHeadings = Prefs.get("plot2.saveColumnHeadings", true);
@@ -18092,7 +18816,7 @@ static void initializeVariables()
             int numColumns = 0;
             for (int i=0; i<maxSubsetColumns; i++)
                 {
-                if (!subsetColumn[i].trim().equals(""))
+                if (subsetColumnEnable[i] && !subsetColumn[i].trim().equals(""))
                     {
                     if (!subsetColumn[i].equals(meridian_flip) && table.getColumnIndex(subsetColumn[i])==ResultsTable.COLUMN_NOT_FOUND)
                         {
@@ -18147,7 +18871,7 @@ static void initializeVariables()
                     needDelimiter = false;
                     for (int i=0; i<maxSubsetColumns; i++)
                         {
-                        if (!subsetColumn[i].trim().equals(""))
+                        if (subsetColumnEnable[i] && !subsetColumn[i].trim().equals(""))
                             {
                             line += (needDelimiter?delimiter:"")+subsetColumn[i];
                             needDelimiter = true;
@@ -18162,7 +18886,7 @@ static void initializeVariables()
                     int xlen = x[firstCurve].length;
                     for (int i=0; i<maxSubsetColumns; i++)
                         {
-                        if (!subsetColumn[i].trim().equals(""))
+                        if (subsetColumnEnable[i] && !subsetColumn[i].trim().equals(""))
                             {
                             if (subsetColumn[i].equals(meridian_flip))
                                 {
@@ -19261,7 +19985,30 @@ static void saveLogToFile(String path)
             {
             String filename = "help/multiplot_data_help.htm";
             new HelpPanel(filename, "Data Naming Convention");
-            }         
+            }     
+        
+        
+        public void keyTyped(KeyEvent e) {
+
+        }
+
+        
+        public void keyPressed(KeyEvent e) {
+            int keyCode = e.getKeyCode();
+            if (keyCode == KeyEvent.VK_ALT)
+                {
+                //shiftIsDown = true;
+                }
+        }
+
+        
+        public void keyReleased(KeyEvent e) {
+            int keyCode = e.getKeyCode();
+            if (keyCode == KeyEvent.VK_ALT)
+                {
+                //shiftIsDown = false;
+                }
+        }
 
         static void getPreferences()
                 {
@@ -19305,6 +20052,8 @@ static void saveLogToFile(String path)
                 useGJD  = Prefs.get("plot2.useGJD", useGJD);
                 useHJD  = Prefs.get("plot2.useHJD", useHJD);
                 useBJD  = Prefs.get("plot2.useBJD", useBJD);
+                unscale = Prefs.get("plot2.unscale", unscale);
+                unshift = Prefs.get("plot2.unshift", unshift);
                 useTableRaDec = Prefs.get("plot2.useTableRaDec", useTableRaDec);
                 maxSubsetColumns=(int)Prefs.get("plot2.maxSubsetColumns", maxSubsetColumns);
                 modifyCurvesAbove=Prefs.get("plot2.modifyCurvesAbove", modifyCurvesAbove);
@@ -19352,6 +20101,7 @@ static void saveLogToFile(String path)
                 openDataSetWindow=Prefs.get("plot2.openDataSetWindow", openDataSetWindow);
                 openRefStarWindow=Prefs.get("plot2.openRefStarWindow", openRefStarWindow);
                 openFitPanels=Prefs.get("plot2.openFitPanels", openFitPanels);
+                addAstroDataFrameWasShowing=Prefs.get("plot2.addAstroDataFrameWasShowing", addAstroDataFrameWasShowing);
                 rememberWindowLocations=Prefs.get("plot2.rememberWindowLocations", rememberWindowLocations);
                 keepSeparateLocationsForFitWindows=Prefs.get("plot2.keepSeparateLocationsForFitWindows", keepSeparateLocationsForFitWindows);
                 divideNotSubtract=Prefs.get("plot.divideNotSubtract", divideNotSubtract);
@@ -19368,6 +20118,12 @@ static void saveLogToFile(String path)
                 showXAxisAsDaysSinceTc = Prefs.get("plot.showXAxisAsDaysSinceTc", showXAxisAsDaysSinceTc);
                 T0 = Prefs.get("plot.T0", T0);
                 period = Prefs.get("plot.period", period);
+                duration = Prefs.get("plot.duration", duration);
+                T0Step = Prefs.get("plot.T0Step", T0Step);
+                periodStep = Prefs.get("plot.periodStep", periodStep);
+                durationStep = Prefs.get("plot.durationStep", durationStep);
+                twoxPeriod = Prefs.get("plot.twoxPeriod", twoxPeriod);
+                oddNotEven = Prefs.get("plot.oddNotEven", oddNotEven);
                 yMaxStep=Prefs.get("plot.yMaxStep", yMaxStep);
                 yMinStep=Prefs.get("plot.yMinStep", yMinStep);
                 vMarker1Value=Prefs.get("plot.vMarker1Value", vMarker1Value);
@@ -19462,7 +20218,7 @@ static void saveLogToFile(String path)
                 logSuffix = Prefs.get("Astronomy_Tool.logSuffix", logSuffix);
                 
                 saveAllPNG = Prefs.get("Astronomy_Tool.saveAllPNG", saveAllPNG);
-
+                    
                 showSaturationWarning  = Prefs.get (Aperture_.AP_PREFS_SHOWSATWARNING, showSaturationWarning);
                 forceAbsMagDisplay = Prefs.get("plot2.forceAbsMagDisplay", forceAbsMagDisplay);
                 saturationWarningLevel = Prefs.get (Aperture_.AP_PREFS_SATWARNLEVEL, saturationWarningLevel);
@@ -19520,6 +20276,8 @@ static void saveLogToFile(String path)
                         ylabel[i]=Prefs.get("plot.ylabel"+i,ylabel[i]);
                         lines[i]=Prefs.get("plot.lines"+i, lines[i]);
                         smooth[i]=Prefs.get("plot.smooth"+i, smooth[i]);
+                        smoothLen[i]=(int)Prefs.get("plot.smoothLen"+i, smoothLen[i]);
+                        if (smoothLen[i] < 1) smoothLen[i] = 31;
                         markerIndex[i]=(int)Prefs.get("plot.markerIndex"+i,markerIndex[i]);
                         residualSymbolIndex[i]=(int)Prefs.get("plot.residualSymbolIndex"+i,residualSymbolIndex[i]);
                         colorIndex[i]=(int)Prefs.get("plot.colorIndex"+i, colorIndex[i]);
@@ -19610,6 +20368,8 @@ static void saveLogToFile(String path)
                 Prefs.set("plot2.useGJD", useGJD);
                 Prefs.set("plot2.useHJD", useHJD);
                 Prefs.set("plot2.useBJD", useBJD);
+                Prefs.set("plot2.unscale", unscale);
+                Prefs.set("plot2.unshift", unshift);
                 Prefs.set("plot2.useTableRaDec", useTableRaDec);
                 }
         
@@ -19678,6 +20438,7 @@ static void saveLogToFile(String path)
                 Prefs.set("plot2.openDataSetWindow",openDataSetWindow);
                 Prefs.set("plot2.openRefStarWindow", openRefStarWindow);
                 Prefs.set("plot2.openFitPanels", openFitPanels);
+                Prefs.set("plot2.addAstroDataFrameWasShowing", addAstroDataFrameWasShowing);
                 Prefs.set("plot.legendPosX",legendPosX);
                 Prefs.set("plot.legendPosY",legendPosY);
                 Prefs.set("plot2.rememberWindowLocations",rememberWindowLocations);
@@ -19708,7 +20469,13 @@ static void saveLogToFile(String path)
                 Prefs.set("plot.showXAxisAsHoursSinceTc", showXAxisAsHoursSinceTc);
                 Prefs.set("plot.showXAxisAsDaysSinceTc", showXAxisAsDaysSinceTc);
                 Prefs.set("plot.T0", T0);
-                Prefs.set("plot.period", period);                
+                Prefs.set("plot.period", period);  
+                Prefs.set("plot.duration", duration); 
+                Prefs.set("plot.T0Step", T0Step);
+                Prefs.set("plot.periodStep", periodStep);
+                Prefs.set("plot.durationStep", durationStep);
+                Prefs.set("plot.twoxPeriod", twoxPeriod);
+                Prefs.set("plot.oddNotEven", oddNotEven);
                 Prefs.set("plot.showXScaleInfo", showXScaleInfo);
                 Prefs.set("plot.showYScaleInfo", showYScaleInfo);
                 Prefs.set("plot.showYShiftInfo", showYShiftInfo);
@@ -19808,6 +20575,7 @@ static void saveLogToFile(String path)
                         Prefs.set("plot.oplabel"+i,oplabel[i]);
                         Prefs.set("plot.lines"+i, lines[i]);
                         Prefs.set("plot.smooth"+i, smooth[i]);
+                        Prefs.set("plot.smoothLen"+i, smoothLen[i]);
                         Prefs.set("plot.markerIndex"+i,markerIndex[i]);
                         Prefs.set("plot.residualSymbolIndex"+i,residualSymbolIndex[i]);
                         Prefs.set("plot.colorIndex"+i,colorIndex[i]);

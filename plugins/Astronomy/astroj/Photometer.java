@@ -385,7 +385,7 @@ public class Photometer
 
         if (usePlaneLocal && !plane.fitPlane())
             {
-            IJ.log("Photometer ERROR : cannot fit plane to background, using average background instead.");
+            //IJ.log("Photometer ERROR : cannot fit plane to background, using average background instead.");
             fitPlaneError = true;
             }
 

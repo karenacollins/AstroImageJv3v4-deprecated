@@ -101,6 +101,7 @@ public class AstroCanvas extends OverlayCanvas {
         Font p12 = new Font (Font.SANS_SERIF, Font.PLAIN, 12);
         Font p16 = new Font (Font.MONOSPACED, Font.PLAIN, 20);
 
+        DecimalFormat twoplaces = new DecimalFormat("0.00", IJU.dfs);
         DecimalFormat onePlace = new DecimalFormat("0.0", IJU.dfs);
         DecimalFormat noPlaces = new DecimalFormat("0", IJU.dfs);
 
@@ -883,7 +884,7 @@ public class AstroCanvas extends OverlayCanvas {
                 arcLen = length/getMagnification();
                 units = " pixels";
                 }
-            String label = (XPixelScale == 0.0 ? noPlaces.format(arcLen) : onePlace.format(arcLen))+units;
+            String label = (XPixelScale == 0.0 ? noPlaces.format(arcLen) : twoplaces.format(arcLen))+units;
             FontMetrics fm   = g.getFontMetrics(p16);
             java.awt.geom.Rectangle2D rect = fm.getStringBounds(label, g);
             int labelWidth  = (int)(rect.getWidth());
@@ -925,7 +926,7 @@ public class AstroCanvas extends OverlayCanvas {
                 units = " pixels";
                 }
             
-            String label = (YPixelScale == 0.0 ? noPlaces.format(arcLen) : onePlace.format(arcLen))+units;
+            String label = (YPixelScale == 0.0 ? noPlaces.format(arcLen) : twoplaces.format(arcLen))+units;
 //            if (IJ.isMacOSX())  //work around an apparent OS X java bug that reverses characters in a string when canvas is rotated (at least in JRE 1.6.0_37 (32-bit)
 //                {
 //                label = new StringBuffer(label).reverse().toString();

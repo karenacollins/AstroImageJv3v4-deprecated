@@ -580,7 +580,7 @@ public class Centroid
 			}
 		else
             {
-			IJ.log("Centroid ERROR : no signal in aperture for moment widths!");
+			if (reposition) IJ.log("Centroid ERROR : no signal in aperture for moment widths!");
             xCenter = xCenterStart;
             yCenter = yCenterStart;
 			xWidth = 0.0;
