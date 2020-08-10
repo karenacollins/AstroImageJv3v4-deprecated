@@ -725,6 +725,7 @@ public class Astrometry //implements KeyListener
                 "CUNIT1",
                 "CUNIT2",
                 "EQUINOX",
+                "EPOCH",
                 "LONPOLE",
                 "LATPOLE",
                 "CRVAL1",

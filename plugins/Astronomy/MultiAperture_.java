@@ -2504,6 +2504,7 @@ public class MultiAperture_ extends Aperture_ implements MouseListener, MouseMot
             }
         OverlayCanvas.getOverlayCanvas(imp).clearRois();
         nFWHM=0;
+        fwhmMean=0.0;
 		for (int ap=0;  ap < nApertures; ap++)
 			{
             if (!isRefStar[ap])

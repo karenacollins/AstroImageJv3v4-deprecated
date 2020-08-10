@@ -411,7 +411,8 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
             MenuItem debayerMenuItem, splitChannelsMenuItem, imagesToStackMenuItem, stackToImagesMenuItem, RGBComposerMenuItem;
             MenuItem normalizeStackMenuItem, shiftImageMenuItem, editFitsHeaderMenuItem, copyFitsHeaderMenuItem, staticProfilerMenuItem, stackToRGBMenuItem, makeCompositeMenuItem;
             MenuItem apertureSettingsMenuItem, multiApertureMenuItem, multiPlotMenuItem, openMeasurementsTableMenuItem, threeDSurfacePlotMenuItem;
-            MenuItem bestEdgesMenuItem, imageCalcMenuItem, seeingProfileMenuItem, dynamicProfilerMenuItem, azimuthalAverageMenuItem;
+            MenuItem bestEdgesMenuItem, imageCalcMenuItem, seeingProfileMenuItem, dynamicProfilerMenuItem;
+            MenuItem contourLinesMenuItem, contourPlottersMenuItem, azimuthalAverageMenuItem;
             MenuItem measurementSettingsMenuItem, measurementMenuItem, smoothMenuItem, sharpenMenuItem, removeOutliersMenuItem;
             MenuItem dataReducerMenuItem, selectBestFramesMenuItem, setPixelScaleMenuItem, setZoomIndicatorSizeMenuItem, setAutoScaleParametersMenuItem,
                      grabAutoScaleParametersMenuItem,resetAutoScaleParametersMenuItem;
@@ -1622,11 +1623,19 @@ public class AstroStackWindow extends StackWindow implements LayoutManager, Acti
                 dynamicProfilerMenuItem = new MenuItem("Plot dynamic line/box profile... *");
                 dynamicProfilerMenuItem.addActionListener(this);
                 analyzeMenu.add(dynamicProfilerMenuItem);
-
+                
+                contourLinesMenuItem = new MenuItem("Plot automated contour lines on image...");
+                contourLinesMenuItem.addActionListener(this);
+                analyzeMenu.add(contourLinesMenuItem);
+                
+                contourPlottersMenuItem = new MenuItem("Plot custom contour lines on image...");
+                contourPlottersMenuItem.addActionListener(this);
+                //analyzeMenu.add(contourPlottersMenuItem);
+                
                 azimuthalAverageMenuItem = new MenuItem("Plot azimuthal average... *");
                 azimuthalAverageMenuItem.addActionListener(this);
-                azimuthalAverageMenuItem.setEnabled(false);
-                analyzeMenu.add(azimuthalAverageMenuItem);
+                azimuthalAverageMenuItem.setEnabled(true);
+                //analyzeMenu.add(azimuthalAverageMenuItem);
 
                 threeDSurfacePlotMenuItem = new MenuItem("Interactive 3-D surface plot");
                 threeDSurfacePlotMenuItem.addActionListener(this);
@@ -3940,6 +3949,14 @@ protected ImageIcon createImageIcon(String path, String description) {
                 else if(b == dynamicProfilerMenuItem)
                     {
                     IJ.runPlugIn("Dynamic_Profiler", "");
+                    }
+                else if(b == contourLinesMenuItem)
+                    {
+                    IJ.runPlugIn("ContourLines_", "imp");
+                    }
+                else if(b == contourPlottersMenuItem)
+                    {
+                    IJ.runPlugIn("ContourPlotter_", "imp");
                     }
                 else if(b == azimuthalAverageMenuItem)
                     {

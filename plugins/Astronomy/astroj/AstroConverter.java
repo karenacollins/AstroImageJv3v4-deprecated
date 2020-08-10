@@ -1532,16 +1532,18 @@ public class AstroConverter implements ItemListener, ActionListener, ChangeListe
 
         JLabel updateleapSecLabel = new JLabel ("Update");
         updateleapSecLabel.setFont(p12);
-        updateleapSecLabel.setToolTipText("Update leap second table from USNO website");
+        updateleapSecLabel.setToolTipText("Leapsecs are now updated with a new AIJ release. USNO Leapsec server is no longer available."); //("Update leap second table from USNO website");
         updateleapSecLabel.setHorizontalAlignment (JTextField.RIGHT);
+        updateleapSecLabel.setEnabled(false);
 		eoiLeapSecPanel.add (updateleapSecLabel);
 
         updateLeapSecTableButton = new JButton(updateLeapSecTableIcon);
-        updateLeapSecTableButton.setToolTipText("Update leap second table from USNO website");
+        updateLeapSecTableButton.setToolTipText("Leapsecs are now updated with a new AIJ release. USNO Leapsec server is no longer available."); //("Update leap second table from USNO website");
         updateLeapSecTableButton.setMargin(buttonMargin);
         updateLeapSecTableButton.addActionListener(this);
         updateLeapSecTableButton.setPreferredSize(iconDimension);
         eoiLeapSecPanel.add(updateLeapSecTableButton);
+        updateLeapSecTableButton.setEnabled(false);
 
         JLabel autoLeapSecLabel = new JLabel ("  Auto");
         autoLeapSecLabel.setFont(p12);
@@ -1558,7 +1560,7 @@ public class AstroConverter implements ItemListener, ActionListener, ChangeListe
         leapSecLabel.setFont(p12);
         eoiLeapSecPanel.setToolTipText("<html>The number of leap seconds for the epoch of interest, where leap seconds = UTC - TAI<br>"+
                                         "Background color indication:<br>"+
-                                        "Green: value from USNO leap second table<br>"+
+                                        "Green: value from AstroImageJ leap second table<br>"+
                                         "Yellow: calculated value from Espenak and Meeus 2006<br>"+
                                         "Red: outside the -1999 to +3000 range of Espenak and Meeus 2006<br>"+
                                         "White: editable manual entry</html>");
@@ -1570,7 +1572,7 @@ public class AstroConverter implements ItemListener, ActionListener, ChangeListe
         leapSecTextField.setFont(p12);
         leapSecTextField.setToolTipText("<html>The number of leap seconds for the epoch of interest, where leap seconds = UTC - TAI<br>"+
                                         "Background color indication:<br>"+
-                                        "Green: value from USNO leap second table<br>"+
+                                        "Green: value from AstroImageJ leap second table<br>"+
                                         "Yellow: calculated value from Espenak and Meeus 2006<br>"+
                                         "Red: outside the -1999 to +3000 range of Espenak and Meeus 2006<br>"+
                                         "White: editable manual entry</html>");
@@ -3199,7 +3201,9 @@ double[] processCoordinatePair(JTextField textFieldA, int decimalPlacesA, int ba
                             2451179.5,
                             2453736.5,
                             2454832.5,
-                            2456109.5
+                            2456109.5,
+                            2457204.5,
+                            2457754.5
                             };
 
     TAIminusUTC =  new Double[]
@@ -3242,7 +3246,9 @@ double[] processCoordinatePair(JTextField textFieldA, int decimalPlacesA, int ba
                             32.0,
                             33.0,
                             34.0,
-                            35.0
+                            35.0,
+                            36.0,
+                            37.0
                             };
 
 
@@ -3287,6 +3293,8 @@ double[] processCoordinatePair(JTextField textFieldA, int decimalPlacesA, int ba
                             41317.0,
                             41317.0,
                             41317.0,
+                            41317.0,
+                            41317.0,
                             41317.0
                             };
 
@@ -3305,6 +3313,8 @@ double[] processCoordinatePair(JTextField textFieldA, int decimalPlacesA, int ba
                             0.001296,
                             0.002592,
                             0.002592,
+                            0.0,
+                            0.0,
                             0.0,
                             0.0,
                             0.0,

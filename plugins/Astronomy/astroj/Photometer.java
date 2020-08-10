@@ -333,14 +333,19 @@ public class Photometer
             {
             backMean = back;
             back2Mean = back2/dBackCount;
-            for (int iteration = 0; iteration < 25; iteration++)
+            for (int iteration = 0; iteration < 100; iteration++)
                 {
                 backstdev = Math.sqrt(back2Mean - backMean*backMean);
                 back = 0.0;
                 back2 = 0.0;
                 backCount = 0;
                 if (usePlaneLocal) plane = new FittedPlane ((i2-i1+1)*(j2-j1+1));
-
+                if (markRemovedPixels) 
+                    {
+                    ocanvas.removePixelRois();
+                    }
+                
+                
                 for (int j=j1; j <= j2; j++)   // REMOVE STARS FROM BACKGROUND
                     {
                     dj=(double)j-ypix+Centroid.PIXELCENTER;		// Center
@@ -351,12 +356,14 @@ public class Photometer
                         d = ip.getPixelValue(i,j);
                         if (r2 >= r2b1 && r2 <= r2b2)
                             {
-                            if (!Float.isNaN(d) && (d <= backMean + 2.0*backstdev && d >= backMean - 2.0*backstdev))
+                            if (!Float.isNaN(d) && (d <= backMean + 2.0*backstdev) && (d >= backMean - 2.0*backstdev))
                                 {
                                 back += d;   // FINAL BACKGROUND
                                 back2 += d*d;
                                 backCount++;
+                                //IJ.log("count="+backCount);
                                 if (usePlaneLocal) plane.addPoint (di,dj,d);
+                                //if (markRemovedPixels) addPixelRoi(imp,i,j);
                                 }
                             else if(markRemovedPixels)
                                 {
@@ -381,6 +388,11 @@ public class Photometer
                 prevBackMean = backMean;
                 }
             dBackCount = (double)backCount;
+            if (markRemovedPixels) 
+                {
+                AstroCanvas ac = (AstroCanvas)imp.getCanvas();
+                ac.paint(ac.getGraphics());
+                }
             }
 
         if (usePlaneLocal && !plane.fitPlane())
@@ -717,7 +729,12 @@ double chord(double x, double y0, double y1)
         roi.setImage (imp);
 		ocanvas.add (roi);
 		} 
-
+    
+    protected void removePixelRois (ImagePlus imp)
+		{
+//		roi.setAppearance (pixelColor);
+		ocanvas.removeApertureRois();
+		}
 
 	}
 

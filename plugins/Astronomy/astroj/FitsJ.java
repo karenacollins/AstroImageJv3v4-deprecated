@@ -555,6 +555,7 @@ public class FitsJ
 	 */
 	public static void putHeader (ImageStack stack, String[] cards, int slice)
 		{
+        if (cards==null) return;
 		String s = unsplit(cards,"\n");
 		String label = stack.getSliceLabel(slice);
         if (label == null)
@@ -651,7 +652,7 @@ public class FitsJ
 	public static int findCardWithKey (String key, String[] header)
 		{
 		if (key == null) return -1;
-		
+		if (header == null) return -1;
 		int n=header.length;
 		String k = key.trim();
 		for (int i=0; i < n; i++)
@@ -1424,6 +1425,7 @@ public class FitsJ
 	 */
 	public static String unsplit (String[] arr, String sep)
 		{
+        if (arr==null) return "";
 		String s = arr[0];
 		for (int i=1; i < arr.length; i++)
 			s += sep+arr[i];

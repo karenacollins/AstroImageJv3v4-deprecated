@@ -10958,7 +10958,7 @@ static void initializeVariables()
                         if (Double.isNaN(value)) return;
                         periodStep = value;
                         periodspinner.setModel(new SpinnerNumberModel(new Double(period), 0.0001, null, new Double(periodStep)));
-                        periodspinner.setEditor(new JSpinner.NumberEditor(periodspinner,   "########0.######"));
+                        periodspinner.setEditor(new JSpinner.NumberEditor(periodspinner,   "########0.########"));
                         Prefs.set("plot.periodStep",periodStep);
                         }
                     });
@@ -11234,7 +11234,7 @@ static void initializeVariables()
 
                 periodspinner = new JSpinner(periodspinnermodel);
                 periodspinner.setFont(p11);
-                periodspinner.setEditor(new JSpinner.NumberEditor(periodspinner, "########0.######"));
+                periodspinner.setEditor(new JSpinner.NumberEditor(periodspinner, "########0.########"));
                 periodspinner.setPreferredSize(new Dimension(100, 25));
                 periodspinner.setEnabled(true);
                 periodspinner.setComponentPopupMenu(periodsteppopup);

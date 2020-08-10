@@ -553,5 +553,3 @@ public class Seeing_Profile implements PlugInFilter
 			}
 		}
 	}
-
-

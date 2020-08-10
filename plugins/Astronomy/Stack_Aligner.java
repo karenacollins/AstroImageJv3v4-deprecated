@@ -345,15 +345,17 @@ public class Stack_Aligner extends MultiAperture_
                 }
             }
         
+        imageFilename = IJU.getSliceFilename(imp, slice);
+        if (imageFilename.endsWith(".fz")) imageFilename = imageFilename.substring(0, imageFilename.length() - 3);
         if (isVirtual)
             {
-            imageFilename = IJU.getSliceFilename(imp, slice);
+            
 //            ImagePlus imp2 = (ImagePlus)imp.clone();
 
-            ImagePlus imp2 = new ImagePlus(imp.getStack().getSliceLabel(slice), imp.getStack().getProcessor(slice) ); 
+            ImagePlus imp2 = new ImagePlus(imp.getStack().getSliceLabel(slice), imp.getStack().getProcessor(slice)); 
             imp2.setCalibration(imp.getCalibration());  
             imp2.setFileInfo(imp.getFileInfo());
-            imp2.setProcessor ("Aligned_"+IJU.getSliceFilename(imp, slice), imp.getType()==ImagePlus.COLOR_RGB ? shiftedRGBImage(dx,dy) : shiftedImage(dx,dy));
+            imp2.setProcessor ("Aligned_"+imageFilename, imp.getType()==ImagePlus.COLOR_RGB ? shiftedRGBImage(dx,dy) : shiftedImage(dx,dy));
             String[] scienceHeader = FitsJ.getHeader(imp);
             if (scienceHeader != null)
                 {
@@ -364,7 +366,7 @@ public class Stack_Aligner extends MultiAperture_
             }
         else
             {
-            imp.setProcessor ("Aligned_"+IJU.getSliceFilename(imp, slice), imp.getType()==ImagePlus.COLOR_RGB ? shiftedRGBImage(dx,dy) : shiftedImage(dx,dy));
+            imp.setProcessor ("Aligned_"+imageFilename, imp.getType()==ImagePlus.COLOR_RGB ? shiftedRGBImage(dx,dy) : shiftedImage(dx,dy));
             String[] scienceHeader = FitsJ.getHeader(imp);
             if (scienceHeader != null)
                 {

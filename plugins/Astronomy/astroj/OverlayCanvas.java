@@ -212,8 +212,8 @@ public class OverlayCanvas extends ImageCanvas
                 i--;
                 }
             }
-		}     
-    
+		} 
+
     /**
 	 * Removes all aperture rois from the overlay list.
 	 */

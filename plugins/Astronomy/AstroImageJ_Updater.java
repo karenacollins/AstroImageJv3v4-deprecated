@@ -20,7 +20,14 @@ import java.security.GeneralSecurityException;
 /** This plugin implements the Help/Update AstroImageJ command. */
 public class AstroImageJ_Updater implements PlugIn {
 
-    public static final String URL = "http://www.astro.louisville.edu/software/astroimagej/updates";
+    public static final String URL6 = "http://www.astro.louisville.edu/software/astroimagej/updates";
+    
+    public static final String URL8 = "http://www.astro.louisville.edu/software/astroimagej/updates/updatesjava8";
+    
+    public static String URL = URL6;
+    
+    String[] versionPieces = IJ.getAstroVersion().split("\\.");
+    int majorVersion = Integer.parseInt(versionPieces[0]);
     
     static {
         final TrustManager[] trustAllCertificates = new TrustManager[] {
@@ -129,7 +136,13 @@ public class AstroImageJ_Updater implements PlugIn {
                 file4 = new File(file1.getParent() + "/../Info.plist");
                 }
             }
-    
+        
+        
+        if (majorVersion>3)
+            {
+            URL = URL8;
+            }
+        
 		String[] list = openUrlAsList(URL+"/versions.txt");
         if (list == null )
             {

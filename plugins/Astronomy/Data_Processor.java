@@ -4120,7 +4120,7 @@ protected ImageIcon createImageIcon(String path, String description) {
 
     void getTextFields(DocumentEvent ev)
         {
-        Document source = ev.getDocument();
+        //Document source = ev.getDocument();
 
 //        if (source == dirText.getDocument())
 //        else if (source == filenamePatternText.getDocument())
@@ -5141,9 +5141,9 @@ protected ImageIcon createImageIcon(String path, String description) {
         if (convertToFloat)
             ip = ip.convertToFloat();
 
-        if (removePedestal)
+        String[] header = FitsJ.getHeader(imp);
+        if ((header != null) && removePedestal)
             {
-            String[] header = FitsJ.getHeader(imp);
             int cardnum = FitsJ.findCardWithKey("PEDESTAL", header);
             if (cardnum != -1)
                 {
@@ -5250,11 +5250,10 @@ protected ImageIcon createImageIcon(String path, String description) {
         scienceHeader = FitsJ.getHeader(scienceImp);
         if (scienceHeader == null)
             {
-            error("ERROR: Cannot extract FITS header from science image \""+sciencePath+"\".");
-            return false;
+            IJ.log("WARNING: Cannot extract FITS header from science image \""+sciencePath+"\".");
+            //return false;
             }
-
-        if (calcHeaders)
+        else if (calcHeaders)
             {
             double jd = FitsJ.getMeanJD (scienceHeader);
             if (Double.isNaN(jd))
@@ -5700,45 +5699,48 @@ protected ImageIcon createImageIcon(String path, String description) {
                 saveFileName = s.concat(""+saveSuffix.trim()+".fits");
             }
         savePath += saveFileName;
-        scienceHeader = FitsJ.addHistory("Previous Filename = "+s, scienceHeader);
+        if (scienceHeader != null) scienceHeader = FitsJ.addHistory("Previous Filename = "+s, scienceHeader);
         s = saveFileName;
         scienceImp.setProcessor(s, scienceIp);
 
-        if (useBias)
+        if (scienceHeader != null)
             {
-            scienceHeader = FitsJ.addHistory("Bias corrected with "+biasMaster.trim(), scienceHeader);
-            log("    Bias corrected with "+biasMaster.trim());
-            }
-        if (useNLC && ((!useBias && !useDark && !useFlat) || useBias))
-            {
-            scienceHeader = FitsJ.addHistory("Non-linear corrected with coefficients:", scienceHeader);
-            scienceHeader = FitsJ.addHistory("a0 = "+coeffA, scienceHeader);
-            scienceHeader = FitsJ.addHistory("a1 = "+coeffB, scienceHeader);
-            scienceHeader = FitsJ.addHistory("a2 = "+coeffC, scienceHeader);
-            scienceHeader = FitsJ.addHistory("a3 = "+coeffD, scienceHeader);
-            log("    Non-linear corrected with coefficients: a0="+coeffA+" a1="+coeffB+" a2="+coeffC+" a3="+coeffD);
-            }
-        if (useDark)
-            {
-            scienceHeader = FitsJ.addHistory("Dark corrected with "+(useBias && !deBiasMasterDark?"(deBiased) ":"")+darkMaster.trim(), scienceHeader);
-            if (useBias && scaleExpTime) 
+            if (useBias)
                 {
-                scienceHeader = FitsJ.addHistory("and exposure time scaling factor = "+expTimeFactor, scienceHeader);
-                log("    Dark corrected with "+(!deBiasMasterDark?"(deBiased) ":"")+darkMaster.trim()+" and exposure time scaling factor "+scienceExpTime+"/"+darkExpTime+"="+expTimeFactor);
+                scienceHeader = FitsJ.addHistory("Bias corrected with "+biasMaster.trim(), scienceHeader);
+                log("    Bias corrected with "+biasMaster.trim());
                 }
-            else 
+            if (useNLC && ((!useBias && !useDark && !useFlat) || useBias))
                 {
-                log("    Dark corrected with "+(useBias && !deBiasMasterDark?"(deBiased) ":"")+darkMaster.trim());
+                scienceHeader = FitsJ.addHistory("Non-linear corrected with coefficients:", scienceHeader);
+                scienceHeader = FitsJ.addHistory("a0 = "+coeffA, scienceHeader);
+                scienceHeader = FitsJ.addHistory("a1 = "+coeffB, scienceHeader);
+                scienceHeader = FitsJ.addHistory("a2 = "+coeffC, scienceHeader);
+                scienceHeader = FitsJ.addHistory("a3 = "+coeffD, scienceHeader);
+                log("    Non-linear corrected with coefficients: a0="+coeffA+" a1="+coeffB+" a2="+coeffC+" a3="+coeffD);
                 }
-            }
-        if (useFlat)
-            {
-            scienceHeader = FitsJ.addHistory("Flat corrected with " + flatMaster.trim(), scienceHeader);
-            log("    Flat corrected with " + flatMaster.trim());
-            }
+            if (useDark)
+                {
+                scienceHeader = FitsJ.addHistory("Dark corrected with "+(useBias && !deBiasMasterDark?"(deBiased) ":"")+darkMaster.trim(), scienceHeader);
+                if (useBias && scaleExpTime) 
+                    {
+                    scienceHeader = FitsJ.addHistory("and exposure time scaling factor = "+expTimeFactor, scienceHeader);
+                    log("    Dark corrected with "+(!deBiasMasterDark?"(deBiased) ":"")+darkMaster.trim()+" and exposure time scaling factor "+scienceExpTime+"/"+darkExpTime+"="+expTimeFactor);
+                    }
+                else 
+                    {
+                    log("    Dark corrected with "+(useBias && !deBiasMasterDark?"(deBiased) ":"")+darkMaster.trim());
+                    }
+                }
+            if (useFlat)
+                {
+                scienceHeader = FitsJ.addHistory("Flat corrected with " + flatMaster.trim(), scienceHeader);
+                log("    Flat corrected with " + flatMaster.trim());
+                }
 
 
-        FitsJ.putHeader(scienceImp, scienceHeader);
+            FitsJ.putHeader(scienceImp, scienceHeader);
+            }
 
         IJ.wait(100);      //attempt to work around crash problem
         return true;
@@ -6366,7 +6368,7 @@ protected ImageIcon createImageIcon(String path, String description) {
                                                             IJ.run(scienceImp,"Remove Outliers...","radius="+outlierRadius+" threshold="+outlierThreshold+" which=Bright stack");
                                                             scienceIp = scienceImp.getProcessor();
                                                             scienceHeader = FitsJ.getHeader(scienceImp);
-                                                            scienceHeader = FitsJ.addHistory("Bright outliers removed with radius="+outlierRadius+" and threshold="+outlierThreshold, scienceHeader);
+                                                            if (scienceHeader != null) scienceHeader = FitsJ.addHistory("Bright outliers removed with radius="+outlierRadius+" and threshold="+outlierThreshold, scienceHeader);
                                                             log("    Bright outliers removed with radius="+outlierRadius+" and threshold="+outlierThreshold);
                                                             FitsJ.putHeader(scienceImp, scienceHeader);
                                                             if (showScience) FitsJ.putHeader(openImage, scienceHeader);
@@ -6385,9 +6387,9 @@ protected ImageIcon createImageIcon(String path, String description) {
                                                             IJ.run(scienceImp,"Remove Outliers...","radius="+outlierRadius+" threshold="+outlierThreshold+" which=Dark stack");
                                                             scienceIp = scienceImp.getProcessor();
                                                             scienceHeader = FitsJ.getHeader(scienceImp);
-                                                            scienceHeader = FitsJ.addHistory("Dark outliers removed with radius="+outlierRadius+" and threshold="+outlierThreshold, scienceHeader);
+                                                            if (scienceHeader != null) scienceHeader = FitsJ.addHistory("Dark outliers removed with radius="+outlierRadius+" and threshold="+outlierThreshold, scienceHeader);
                                                             log("    Dark outliers removed with radius="+outlierRadius+" and threshold="+outlierThreshold);
-                                                            FitsJ.putHeader(scienceImp, scienceHeader);
+                                                            if (scienceHeader != null) FitsJ.putHeader(scienceImp, scienceHeader);
                                                             if (showScience) FitsJ.putHeader(openImage, scienceHeader);
                                                             if (showScience)
                                                                 {

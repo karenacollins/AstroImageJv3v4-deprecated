@@ -13,14 +13,33 @@
 //  Comments or questions may be directed to the macro's author:
 //  Dennis Conti, email: dennis@astrodennis.com
 //
-//  REVISION 2.18
-var REVISION = "2.18";
+//  REVISION 2.23
+var REVISION = "2.23";
 //
 //  The following are diagnostic flags
 var STARtoDiagnose = "";
 var FORCEbinning = 0;
 //
 //  Revision Notes:
+//       2.23 Change language on user input forum regarding cadence to read:
+//            "Bin data to this cadence (seconds)"
+//       2.22 Increased max. length of a FITS header to 50,000 characters
+//       2.21 Add a space after "px" in subtitle of plots.
+//
+//            Make dmag vs. RMS plot screen larger
+//
+//	      Add a beep at the end of the analysis run.
+
+//       2.20 Add "Likely Cleared" and "Cleared boundary lines to the dmag vs. RMS plots.
+//
+//            If the NEB plot option is selected and therefore nearest neighbors are determined
+//            for each star, turn a star's name and plot point "red" on the dmag vs. RMS plot if
+//            the star's nearest neighbor is within 3 times the radius of the aperture.
+//
+//            Change the option to create debug messages in the log file to an option that allows
+//            the user to turn on/off the informational messages at the end of the analysis run.
+
+//       2.19 Include check for Option 1 when testing if rms limit value was included as a user input
 //       2.18 Change Option 2 to allow for two selections: Display plots and/or Save plots
 //            Add an option to limit the number of nearest neighbor searches;
 //            use a default of 500 for this number
@@ -1017,7 +1036,7 @@ function plotData (plotTitle, yAxisTitle, iBeginValue, iEndValue, xValuesArray, 
         } else {
                depthString = d2s(STARpredDepth[k],1) + " ppt";
                };
-    subTitleString = "Star: " + STARlist[k] + 	starSuffix + "      dmag: " + d2s(STARdmag[k],1) +  "      Required depth: " + depthString + "      RMS: " + d2s(rmsValue*1000,1) + " ppt" + "      ap= " + averageAPERTURE + "px(" + averageAPERTUREarcseconds + doubleQuote + ")";  
+    subTitleString = "Star: " + STARlist[k] + 	starSuffix + "      dmag: " + d2s(STARdmag[k],1) +  "      Required depth: " + depthString + "      RMS: " + d2s(rmsValue*1000,1) + " ppt" + "      ap= " + averageAPERTURE + "px (" + averageAPERTUREarcseconds + doubleQuote + ")";  
     lenString = lengthOf(subTitleString);
     locString = ((charWidth - lenString)/2 )/ charWidth;
 //  Offset an additional 8 characters
@@ -1262,7 +1281,7 @@ userString("Radius of interest around target (arc-min.)",RADIUS,lenRadius);
 //
 //  Request cadence
 CADENCE = call("ij.Prefs.get","nebcheck.CADENCE","180");
-userString("Enter cadence to use when calculating RMS (seconds)",CADENCE,lenCadence);
+userString("Bin data to this cadence (seconds)",CADENCE,lenCadence);
 //
 //  Request user's preference for inputting pixel scale, or using a user-provided
 //  plate-solved image to later calculate the PA's for the stars within the above
@@ -1291,10 +1310,10 @@ userString(string,DEPTH,lenTargetDepth);
 RMSlimit = call("ij.Prefs.get","nebcheck.RMSlimit","5");
 userString("For Option 2: multiple of RMS used to eliminate outliers from plots",RMSlimit,lenRMSLimit);
 //
-//  Ask if the user would like to enable log file diagnostics
-message = "Select this box if you would like to turn on logfile diagnostics";
+//  Ask if the user would like to enable informational messages at the end of the run
+message = "Select this box if you would like informational messages at the end of the run";
 Dialog.addMessage("");
-debugChoice = call("ij.Prefs.get","nebcheck.debugChoice",false);
+debugChoice = call("ij.Prefs.get","nebcheck.infChoice",true);
 Dialog.addCheckbox(message,debugChoice);
 Dialog.addMessage("Note 1: use decimal part only; however, add 1 if day rolls over from beginning of data");
 Dialog.addMessage("Note 2: use decimal part only; however, add 1 if day rolls over from ingress time");
@@ -1416,17 +1435,12 @@ predTargetDepth = parseFloat(DEPTH);
 //  Get multiple of rms used to eliminate outliers
 RMSlimit = Dialog.getString();
 call("ij.Prefs.set","nebcheck.RMSlimit",RMSlimit);
-if ((nebPlotOption || dmagRMSOption) && RMSlimit == "") {errorHandling("**** ERROR: Option 2, 3, or 4 was selected, but no multiple of RMS was entered");};
-if ((nebPlotOption || dmagRMSOption) && RMSlimit != "") {rmsLimitValue = parseFloat(RMSlimit);};
+if ((nebTableOption || nebPlotOption || dmagRMSOption) && RMSlimit == "") {errorHandling("**** ERROR: Option 1, 2, 3, or 4 was selected, but no multiple of RMS was entered");};
+if ((nebTableOption || nebPlotOption || dmagRMSOption) && RMSlimit != "") {rmsLimitValue = parseFloat(RMSlimit);};
 //
-//  Get choice of debug mode and, if enabled, clear the log window
-debugChoice = Dialog.getCheckbox();
-call("ij.Prefs.set","nebcheck.debugChoice",debugChoice);
-if (debugChoice) {
-   debugMode=1;
-//  Clear the user's AIJ log window
-   print("\\Clear");
-};
+//  Get choice of whether informational messages are to be displayed
+infChoice = Dialog.getCheckbox();
+call("ij.Prefs.set","nebcheck.infChoice",infChoice);
 //
 //
 //****************** GET MEASUREMENT TABLE
@@ -1512,7 +1526,7 @@ if (usePlateSolvedImage) {
 //  Read plate-solved file
 //
     filepath = File.openDialog("Select Plate Solved File");
-    fitFile=File.openAsRawString(filepath,20000);
+    fitFile=File.openAsRawString(filepath,50000);
     debugPrint("Successfully retrieved plate-solved file",1);
 //
 //   Find value for WCS parameter CD1_1
@@ -2255,6 +2269,10 @@ rowString = fileArray[1];
 //
 // Cycle through each star to create the appropriate plots
 //
+// First create an array to later store true or false depending on whether the
+// nearest neighbor was <3 times the aperture radisu
+  neighborCheck = newArray(STARlistIndex);
+//
   for (k=STARlistIndex-1;k>=0; k--) {
 //
 //******** First, plot the previously computed normalized relative flux values for this star
@@ -2377,6 +2395,13 @@ rowString = fileArray[1];
       plotNeighbor();
       plotPAandOverlay (k);
 //
+//  If the nearest neighbor is <3*aperture radius, set neighborCheck[k] to true, otherwise false.
+//  neighborCheck will later be used when plotting the dmag vs. RMS plot to determine if this star
+//  should be plotted "red." Exclude stars where no nearest neighbor was found.
+//
+      apertureRadiusArcSeconds = averageAPERTURE*nScale;
+      if (minDistanceArcSeconds <= 3*apertureRadiusArcSeconds && minDistanceString != "N/A") {
+            neighborCheck[k]=true;} else { neighborCheck[k]=false;};
 //
 //    Save the plot for the normal relative flux case
       savePlot (STARlist[k], "-NEBdepth-plot.png");
@@ -2463,15 +2488,8 @@ rowString = fileArray[1];
         };
      };
   };
-//  If plots are only to be saved, display a message in an "empty plot" showing
-//  where the plot files can be found
   if (saveOnlyPlots) {
-    Plot.create("No NEB Overlays Displayed"," "," ");
-    Plot.setFrameSize(900,100);
-    Plot.setLimits(0,0,0,0);
-    Plot.addText("NEB OVERLAY PLOTS CAN BE FOUND IN:",0.02,0.5);
-    Plot.addText(subDirectoryPath,0.02,0.7);
-    Plot.update();
+   close();
    };
 };
 //
@@ -2537,40 +2555,74 @@ if (dmagRMSOption) {
     if (logPlot) {
         Plot.create("dmag_vs_RMS","dmag","log10 of RMS (ppt)");
         } else {Plot.create("dmag_vs_RMS","dmag","RMS (ppt)");};
+    Plot.setFrameSize(widthPlot,heightPlot);
     Plot.setLimits(dmagMIN,dmagMAX,rmsMIN,rmsMAX);
-//  Put file name at a position 30% from the upper left corner; include radius search if there was one
+//  Put file name at a position 6% from the upper left corner; include radius search if there was one
 //  Force use of radius plot option
     radiusPlot = true;
     if (radiusPlot) {
-       Plot.addText(fullFileName,0.3,-0.06);
-       message = "                              Radius (arc-min): " + RADIUS;
-       Plot.addText(message,0.3,-0.006);
+       Plot.addText(fullFileName,0.25,-0.04);
+       message = "Radius (arc-min): " + RADIUS;
+       Plot.addText(message,0.4,-0.004);
        } else {
-               Plot.addText(fullFileName,0.3,-0.02);
+               Plot.addText(fullFileName,0.25,-0.04);
               };
-//  Put into xValues and yValues the STARdmag and STARrms values up to the
-//  number of stars
-    xValues = newArray(nStars);
-    yValues = newArray(nStars);
-    for (i=0;i<nStars;i++) {
-//  Exclude stars with a disposition of ***Not Cleared-flux too low***"
-        if (STARdisp[i] != "***Not Cleared-flux too low***") {
-            xValues[i] = STARdmag[i];
-            yValues[i] = STARrmsPlot[i];
-            };
-        };
-    Plot.add("x",xValues,yValues);
+//  Include legends for "Likely Cleared" and "Cleared" boundaries
+    Plot.setColor("magenta");
+    Plot.addText("Likely Cleared Boundary",0.05,-0.004);
+    Plot.setColor("green");
+    Plot.addText("Cleared Boundary",0.7,-0.004);
+    Plot.setColor("black");
+//
+//  Plot "Likely Cleared" and "Cleared" boundary lines
+    nPoints = 500;
+    xClearValues = newArray(nPoints);
+    yPrelimValues = newArray(nPoints);
+    yClearValues = newArray(nPoints);
+    incr = dmagMAX/nPoints;
+//  Perform two plots: "Likely Cleared" with a factor of 3 and yellow points;
+//  and "Cleared" with a factor of 5 and green points. First create the
+//  x values and preliminary y values
+    for (i=0; i<nPoints; i++) {
+         xClearValues[i] = incr * i;
+//  Compute required NEB depth for a dmag of xValues[i] after subtracting
+//  TESS correction factor
+         corrDmag = xClearValues[i] + dmagBuffer;
+         X = pow(10,-corrDmag/2.50);
+         NEBdepthPPT = predTargetDepth / X;
+         yPrelimValues[i] = NEBdepthPPT;
+         };
+//  Plot both the "Likely Cleared" and "Cleared" boundary lines
+    for (j=0;j<2; j++) {
+       if (j==0) {
+              Plot.setColor("magenta"); factor = 3;
+              } else {Plot.setColor("green"); factor = 5;};
+       for (i=0; i<nPoints; i++) {
+         yClearValues[i] = yPrelimValues[i]/factor;
+         };
+       Plot.add(",",xClearValues,yClearValues);
+      };
+      Plot.setColor("black");
 //
 //  Plot star labels at the correct locations on the plot
     Plot.setJustification("center");
     for (i=0;i<nStars;i++) {
 //  Exclude stars with a disposition of ***Not Cleared-flux too low***"
         if (STARdisp[i] != "***Not Cleared-flux too low***") {
-            X = (xValues[i]-dmagMIN)/(dmagMAX-dmagMIN);
-            Y = (rmsMAX - yValues[i])/(rmsMAX-rmsMIN);
+            X = (STARdmag[i]-dmagMIN)/(dmagMAX-dmagMIN);
+            Y = (rmsMAX - STARrmsPlot[i])/(rmsMAX-rmsMIN);
             message = "STARlist[i]: " + STARlist[i] + " X: " + d2s(X,1) + " Y: " + d2s(Y,1);
             successPrint = debugPrint(message,1);
+//  If a NEB plot was done earlier and the distance to the nearest neighbor was found
+//  to be < 3 times the aperture radius (i.e., neighborCheck = true), 
+//  then show the star name in red, otherwise black
+            Plot.setColor("black");
+            if (nebPlotOption) {
+                if (neighborCheck[i]) {Plot.setColor("red");};
+                };
             Plot.addText(STARlist[i],X,Y);
+            Plot.addText("x",X,Y+0.02);
+            Plot.setColor("black");
             };
         };
     Plot.show;
@@ -2740,32 +2792,35 @@ if (nebTableOption){
   File.close(outputFile);
 };
 //
-//  Display appropriate dialogue message informing user of location of saved files
-//
-Dialog.create("");
-if (nebTableOption && !dmagRMSOption) {
-   Dialog.addMessage("The NEB Search Table can be found in:");
-   Dialog.addMessage(fileDir);
-   Dialog.addMessage("");
-   };
-if (dmagRMSOption && !nebTableOption) {
-   Dialog.addMessage("The Dmag vs. RMS plot can be found in:");
-   Dialog.addMessage(fileDir);
-   Dialog.addMessage("");
-   };
-if (nebTableOption && dmagRMSOption) {;
-   Dialog.addMessage("The NEB Search Table and Dmag vs. RMS plot can be found in:");
-   Dialog.addMessage(fileDir);
-   Dialog.addMessage("");
-   };
-if (nebPlotOption && (savePlots || saveOnlyPlots) ) {
-    Dialog.addMessage("The NEB predicted depth plots can be found in the following subdirectory:");
-    Dialog.addMessage(subDirectoryPath);
-    Dialog.addMessage("");
-    };
-if (nebTableOption || dmagRMSOption || (nebPlotOption && (savePlots || saveOnlyPlots)) ) {
-   Dialog.addMessage("                            NEB analysis completed!");
-   } else {Dialog.addMessage("NEB analysis completed!");};
-Dialog.show();
+beep();
+//  If user opted for it, display appropriate dialogue message informing
+//  user of location of saved files
+  if (infChoice) {
+       Dialog.create("");
+       if (nebTableOption && !dmagRMSOption) {
+          Dialog.addMessage("The NEB Search Table can be found in:");
+          Dialog.addMessage(fileDir);
+          Dialog.addMessage("");
+          };
+       if (dmagRMSOption && !nebTableOption) {
+          Dialog.addMessage("The Dmag vs. RMS plot can be found in:");
+          Dialog.addMessage(fileDir);
+          Dialog.addMessage("");
+          };
+       if (nebTableOption && dmagRMSOption) {
+          Dialog.addMessage("The NEB Search Table and Dmag vs. RMS plot can be found in:");
+          Dialog.addMessage(fileDir);
+          Dialog.addMessage("");
+          };
+       if (nebPlotOption && (savePlots || saveOnlyPlots) ) {
+           Dialog.addMessage("The NEB predicted depth plots can be found in the following subdirectory:");
+           Dialog.addMessage(subDirectoryPath);
+           Dialog.addMessage("");
+           };
+       if (nebTableOption || dmagRMSOption || (nebPlotOption && (savePlots || saveOnlyPlots)) ) {
+          Dialog.addMessage("                            NEB analysis completed!");
+          } else {Dialog.addMessage("NEB analysis completed!");};
+       Dialog.show();
+     };
 //
 exit();
