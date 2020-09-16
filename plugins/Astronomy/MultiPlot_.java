@@ -1364,6 +1364,8 @@ static public void updateColumnLists()
                     setupDataBuffers();
                     }
                 unfilteredColumns = table.getColumnHeadings().split("\t");
+                vMarker1Value=Prefs.get("plot.vMarker1Value", vMarker1Value);
+                vMarker2Value=Prefs.get("plot.vMarker2Value", vMarker2Value);
                 if (!Arrays.equals(unfilteredColumns, oldUnfilteredColumns))
                     {
                     updatePlotRunning = false;
@@ -9109,6 +9111,7 @@ static void initializeVariables()
                         {
                         checkForUT(vmarker1spinner);
                         vMarker1Value = ((Double)vmarker1spinner.getValue()).doubleValue(); //IJU.getSpinnerDoubleValue(vmarker1spinner);// 
+                        Prefs.set("plot.vMarker1Value", vMarker1Value);
                         updatePlot(updateNoFits());
                         }
                     });
@@ -9179,6 +9182,7 @@ static void initializeVariables()
                         {
                         checkForUT(vmarker2spinner);
                         vMarker2Value = ((Double)vmarker2spinner.getValue()).doubleValue();
+                        Prefs.set("plot.vMarker2Value", vMarker2Value);
                         updatePlot(updateNoFits());
                         }
                     });
@@ -11126,6 +11130,8 @@ static void initializeVariables()
                         Prefs.set("plot.showXAxisAsPhase", showXAxisAsPhase);
                         Prefs.set("plot.showXAxisAsHoursSinceTc", showXAxisAsHoursSinceTc);
                         Prefs.set("plot.showXAxisAsDaysSinceTc", showXAxisAsDaysSinceTc);
+                        Prefs.set("plot.vMarker1Value", vMarker1Value);
+                        Prefs.set("plot.vMarker2Value", vMarker2Value);
                         updatePlot(updateAllFits());}});
                 hourssincetcButton.addActionListener(new ActionListener(){
                     public void actionPerformed(ActionEvent ae) {
@@ -11156,6 +11162,8 @@ static void initializeVariables()
                         Prefs.set("plot.showXAxisAsPhase", showXAxisAsPhase);
                         Prefs.set("plot.showXAxisAsHoursSinceTc", showXAxisAsHoursSinceTc);
                         Prefs.set("plot.showXAxisAsDaysSinceTc", showXAxisAsDaysSinceTc);
+                        Prefs.set("plot.vMarker1Value", vMarker1Value);
+                        Prefs.set("plot.vMarker2Value", vMarker2Value);
                         updatePlot(updateAllFits());}});                
                 orbitalphaseButton.addActionListener(new ActionListener(){
                     public void actionPerformed(ActionEvent ae) {
@@ -11186,6 +11194,8 @@ static void initializeVariables()
                         Prefs.set("plot.showXAxisAsPhase", showXAxisAsPhase);
                         Prefs.set("plot.showXAxisAsHoursSinceTc", showXAxisAsHoursSinceTc);
                         Prefs.set("plot.showXAxisAsDaysSinceTc", showXAxisAsDaysSinceTc);
+                        Prefs.set("plot.vMarker1Value", vMarker1Value);
+                        Prefs.set("plot.vMarker2Value", vMarker2Value);
                         updatePlot(updateAllFits());}});
                 
 
@@ -11289,6 +11299,8 @@ static void initializeVariables()
                         if (vmarker1spinner != null && !showXAxisNormal) dmarker2spinner.setValue((Double)dMarker2Value);
                         dMarker3Value =  duration/48.0;
                         if (vmarker1spinner != null && !showXAxisNormal) dmarker3spinner.setValue((Double)dMarker3Value);
+                        Prefs.set("plot.vMarker1Value", vMarker1Value);
+                        Prefs.set("plot.vMarker2Value", vMarker2Value);
                         updatePlot(updateAllFits());
                         }
                     });
@@ -17843,6 +17855,8 @@ static void initializeVariables()
             Prefs.set("plot.T0", T0);
             Prefs.set("plot.period", period);
             Prefs.set("plot.duration", duration);
+            Prefs.set("plot.vMarker1Value", vMarker1Value);
+            Prefs.set("plot.vMarker2Value", vMarker2Value);
             }        
         
     
